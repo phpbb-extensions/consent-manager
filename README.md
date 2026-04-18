@@ -1,59 +1,63 @@
 # Consent Manager
 
-Consent Manager provides centralized, category-based consent handling for phpBB. It keeps optional analytics and marketing integrations out of the page until the visitor explicitly opts in, exposes a PHP registry for other extensions, and provides a JavaScript API that is available early in the page lifecycle.
+Consent Manager adds a cookie and tracking consent system to phpBB.
 
-## Critical audit summary
+It gives your board a clear consent banner, a settings modal, category-based choices, and a central place for extensions to declare analytics, advertising, and other tracking-related scripts. Visitors can accept all, reject all, or choose categories individually, and they can reopen their settings later from the footer.
 
-The original implementation had three important weaknesses:
+Out of the box, the extension supports these categories:
 
-1. The full runtime only initialized in the footer, so early extension scripts could observe a partial stub instead of the real API.
-2. PHP-side registrations validated ACP JSON input, but did not consistently reject unsafe or malformed script definitions coming from extension code.
-3. Script blocking was deterministic only for scripts routed through the registry; this needed to be stated clearly and supported with a stronger deferred-script pattern.
+- `necessary`
+- `analytics`
+- `marketing`
 
-These issues are addressed by earlier runtime boot, stricter registration validation, synchronized consent state handling, and clearer integration rules.
+It also includes ACP settings for banner text, category availability, simple admin-managed integrations, server-side logging of consent decisions, and consent version resets.
 
-## How script blocking works
+Consent Manager is designed to coordinate consent for **cooperating integrations**.
 
-Consent Manager can only guarantee blocking for integrations that cooperate with it.
+## For extension authors
 
-1. The extension publishes the consent payload and bootstraps `window.consentManager` in the document head.
-2. Optional scripts registered through the PHP or JavaScript API are kept as metadata, not executable markup.
-3. The runtime creates real `<script>` elements only after the relevant category has been granted.
-4. Inline or external template scripts can be deferred safely with placeholder tags:
+If your extension adds analytics, advertising, or other tracking/cookie-related JavaScript, this is the usual integration path:
 
-```html
-<script type="text/plain" data-consent-category="analytics" src="https://cdn.example.com/analytics.js"></script>
+1. register your tracking integration in PHP
+2. if your extension uses `INCLUDEJS`, add a small consent check in that JS file where tracking starts
+3. if your extension outputs direct `<script>` tags in templates, convert those tags into consent-aware placeholder tags
 
-<script type="text/plain" data-consent-category="analytics">
-	window.exampleTracker && window.exampleTracker.page();
-</script>
+### 1. Register in PHP
+
+PHP registration is the main integration point.
+
+This is how your extension tells Consent Manager:
+
+- what the integration is called
+- which category it belongs to
+- what description should be shown in the consent UI
+
+Listen to `phpbb.consentmanager.collect_registrations` and register your service through `phpbb.consentmanager.service`:
+
+Basic example:
+
+```php
+$consent_manager->register('ext.example.analytics', [
+	'label' => 'Example Analytics',
+	'category' => 'analytics',
+	'description' => 'Tracks page views after analytics consent is granted.',
+	'scripts' => [],
+]);
 ```
 
-5. The runtime watches the DOM for newly added consent placeholders and activates them only after consent exists.
+That example registers the integration for display in the consent UI, but does **not** ask Consent Manager to load any script files for you.
 
-### Important limitation
+#### About the `scripts` array
 
-If another extension outputs a normal executable `<script>` tag directly, Consent Manager cannot retroactively stop the browser from running it. Extension authors must register optional integrations with Consent Manager or use the `type="text/plain"` placeholder pattern.
+The `scripts` array is mainly for **known external third-party script URLs** that Consent Manager should inject only after consent exists.
 
-## PHP integration API
-
-PHP-side registration is the **preferred integration path** for normal extensions that already load their own JavaScript with `INCLUDEJS`.
-
-It is useful when:
-
-- an extension already knows its integrations on the server side
-- you want services visible in the consent modal before any client JS runs
-- you want ACP-managed integrations with no custom extension JS changes
-
-In practice, this keeps the JavaScript changes small: the extension registers its analytics/marketing service in PHP, then only adds a small consent check around the point where tracking starts.
-
-Listen to `phpbb.consentmanager.collect_registrations` and register your integration through `phpbb.consentmanager.service`:
+Example:
 
 ```php
 $consent_manager->register('ext.example.ads', [
 	'label' => 'Example Ads',
 	'category' => 'marketing',
-	'description' => 'Loads advertising and attribution scripts after marketing consent.',
+	'description' => 'Loads advertising and attribution scripts after marketing consent is granted.',
 	'scripts' => [
 		[
 			'id' => 'ext.example.ads.loader',
@@ -68,60 +72,29 @@ $consent_manager->register('ext.example.ads', [
 ]);
 ```
 
-### Registration rules
+That works well for stable external URLs such as ad, analytics, or tag-loader scripts.
 
-- `id` must be a stable identifier using letters, numbers, `.`, `_`, `:`, or `-`
+For extension-owned JavaScript files that you normally load with `INCLUDEJS`, the better pattern is usually to keep using `INCLUDEJS` and add a small consent check in the JS file instead of routing that local file through the `scripts` array.
+
+#### Registration rules
+
+- `id` must use letters, numbers, `.`, `_`, `:`, or `-`
 - `category` must be `necessary`, `analytics`, or `marketing`
-- each script may declare **either** `src` **or** `inline`, not both
+- each script entry may define either `src` or `inline`, not both
 - `src` must be an `http`, `https`, or relative URL
-- event-handler attributes such as `onclick` are rejected
-- ACP-managed integrations intentionally do **not** support arbitrary inline JavaScript
+- unsafe attributes such as event handlers are rejected
 
-## JavaScript integration API
+### 2. If your extension already uses INCLUDEJS
 
-The runtime is initialized in the document head, so client code can rely on it before later page scripts run.
+If your extension already loads a normal JS file through `INCLUDEJS`, you usually do **not** need to redesign the extension.
 
-```js
-if (window.consentManager.hasConsent('marketing')) {
-	loadAds();
-}
-
-window.consentManager.onChange(function (state) {
-	if (state && state.categories.indexOf('marketing') !== -1) {
-		loadAds();
-	}
-});
-```
-
-You can also register client-side scripts:
-
-```js
-window.consentManager.registerScript('ext.example.analytics.loader', {
-	category: 'analytics',
-	src: 'https://cdn.example.com/analytics.js',
-	async: true
-});
-```
-
-If you need a stable hook after the full manager is installed:
-
-```js
-window.consentManager.ready(function (consentManager) {
-	if (consentManager.hasConsent('analytics')) {
-		// Safe to run analytics-dependent code
-	}
-});
-```
-
-## Traditional phpBB extension pattern
-
-Extensions do not need to become Consent Manager-only extensions. A normal phpBB extension can still include its JavaScript through a template event:
+Keep the include:
 
 ```html
 {% INCLUDEJS '@vendor_extension/js/feature.js' %}
 ```
 
-Then keep the script lightweight and gate the actual tracking behavior inside that file:
+Then add a small consent check around the place where tracking starts:
 
 ```js
 (function (window) {
@@ -154,51 +127,77 @@ Then keep the script lightweight and gate the actual tracking behavior inside th
 })(window);
 ```
 
-This keeps the extension fully functional when Consent Manager is absent, while still deferring analytics or marketing behavior when Consent Manager is installed. For many extensions, the JavaScript change is limited to wrapping the old tracking startup line with the consent check above, while the service metadata lives in PHP.
+That is the normal pattern for extension-local JS files.
 
-## Direct script tags in templates
+### 3. If your extension outputs direct script tags
 
-If an extension directly emits `<script>` tags instead of loading a normal JS file with `INCLUDEJS`, those tags must be made non-executable until consent exists. Use consent placeholders like:
+If your extension writes live `<script>` tags directly in a template event, PHP registration by itself is **not** enough. Those tags would still run as soon as the browser parses them.
+
+For that pattern, your template usually keeps the same `<script>` tags and conditionally adds Consent Manager's placeholder attributes:
 
 ```html
-<script type="text/plain" data-consent-category="analytics" src="https://cdn.example.com/analytics.js"></script>
-<script type="text/plain" data-consent-category="analytics">
+<script{% if S_CONSENTMANAGER_ENABLED %} type="text/plain" data-consent-category="analytics"{% endif %} src="https://cdn.example.com/analytics.js"></script>
+
+<script{% if S_CONSENTMANAGER_ENABLED %} type="text/plain" data-consent-category="analytics"{% endif %}>
 	window.exampleTracker && window.exampleTracker.page();
 </script>
 ```
 
-This is the right path for extensions like analytics tags that currently hard-code live external and inline script tags in template event files.
+When `S_CONSENTMANAGER_ENABLED` is true, Consent Manager sees `type="text/plain"` plus `data-consent-category` and upgrades the placeholder after the matching category is allowed. When Consent Manager is absent, those attributes are omitted and the same tags run normally.
 
-## Consent withdrawal and re-prompting
+`type="text/plain"` is intentionally inert, so do not output it unconditionally unless your extension depends on Consent Manager being installed.
 
-- Visitors can reopen the settings modal at any time through the persistent **Cookie settings** control.
-- Rejecting categories is as easy as accepting them.
-- When a visitor withdraws consent after optional scripts already executed on the current page, Consent Manager stores the new decision and reloads the page so subsequent rendering happens without those optional scripts.
+## Small JavaScript runtime helpers
 
-## Failure scenarios
+Consent Manager also exposes a small runtime object at `window.consentManager`.
 
-### JavaScript disabled
+For most extensions, the main helpers are:
 
-Optional integrations remain off because Consent Manager never turns their metadata into executable scripts. A `noscript` notice explains that optional services remain disabled.
+- `hasConsent(category)`
+- `onChange(callback)`
+- `ready(callback)`
+- `openSettings()`
 
-### Missing or corrupted consent state
+Simple example:
 
-Invalid or outdated cookie/localStorage data is discarded. The visitor is treated as not having consented and is prompted again.
+```js
+if (window.consentManager.hasConsent('marketing')) {
+	loadAds();
+}
 
-### New categories or changed consent model
+window.consentManager.onChange(function (state) {
+	if (state && state.categories.indexOf('marketing') !== -1) {
+		loadAds();
+	}
+});
+```
 
-The consent version is part of the stored state. Increasing the version in the ACP invalidates previous client-side consent state and forces a fresh prompt.
+There is also a `registerScript()` helper, but that is a more advanced option and is not the preferred integration path for typical extensions:
 
-## Security considerations
+```js
+window.consentManager.registerScript('ext.example.analytics.loader', {
+	category: 'analytics',
+	src: 'https://cdn.example.com/analytics.js',
+	async: true
+});
+```
 
-- ACP-managed integrations reject unsafe sources such as `javascript:`, `data:`, and protocol-relative URLs.
-- Registration attribute validation strips event-handler attributes and reserved script attributes that could bypass runtime checks.
-- Consent logs store only a phpBB-side HMAC of the current user/session identifier, not the raw identifier.
-- The logging endpoint requires a phpBB link hash to reduce CSRF exposure.
-- Inline scripts are supported only for trusted extension code that registers through PHP or the JavaScript runtime.
+If you need a stable hook after the full manager is installed:
 
-## Remaining limitations
+```js
+window.consentManager.ready(function (consentManager) {
+	if (consentManager.hasConsent('analytics')) {
+		// Safe to run analytics-dependent code
+	}
+});
+```
 
-- Consent Manager cannot block executable script tags emitted directly by unrelated extensions or template customizations.
-- It cannot undo third-party requests or cookies that were already created before consent was withdrawn; it can only prevent future execution and reload the page into the new consent state.
-- Full CSP nonce/hash management is not yet implemented for dynamically injected scripts.
+## ACP-managed integrations
+
+The ACP includes a JSON setting for simple admin-managed integrations.
+
+This is mainly for cases where a board admin wants to add a straightforward external analytics or advertising script URL directly from the ACP and have it appear in the consent UI.
+
+ACP-managed integrations are intentionally limited to simple metadata plus a script `src`. They do **not** allow arbitrary inline JavaScript.
+
+For full extension development, PHP registration remains the preferred path.

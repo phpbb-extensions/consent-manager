@@ -140,7 +140,7 @@ class acp_controller
 		$marketing_enabled = $this->request->variable('consentmanager_marketing_enabled', 0);
 		$banner_title = trim($this->request->variable('consentmanager_banner_title', '', true));
 		$banner_text = trim($this->request->variable('consentmanager_banner_text', '', true));
-		$integrations_input = $this->request->variable('consentmanager_integrations', '', true);
+		$integrations_input = trim($this->request->raw_variable('consentmanager_integrations', ''));
 		$integrations = $this->consent_manager->normalize_integrations($integrations_input, $errors);
 
 		if ($banner_title === '')
@@ -158,11 +158,17 @@ class acp_controller
 			return $errors;
 		}
 
+		$stored_integrations = '[]';
+		if ($integrations_input !== '')
+		{
+			$stored_integrations = json_encode(json_decode($integrations_input, true), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+		}
+
 		$this->config->set('consentmanager_analytics_enabled', $analytics_enabled);
 		$this->config->set('consentmanager_marketing_enabled', $marketing_enabled);
 		$this->config_text->set('consentmanager_banner_title', $banner_title);
 		$this->config_text->set('consentmanager_banner_text', $banner_text);
-		$this->config_text->set('consentmanager_integrations', json_encode($integrations));
+		$this->config_text->set('consentmanager_integrations', $stored_integrations);
 
 		return array();
 	}

@@ -19,8 +19,6 @@ if (empty($lang) || !is_array($lang))
 }
 
 $lang = array_merge($lang, array(
-	'ACP_CONSENTMANAGER'							=> 'Consent Manager',
-	'ACP_CONSENTMANAGER_SETTINGS'					=> 'Settings',
 	'ACP_CONSENTMANAGER_EXPLAIN'					=> 'Control category availability, banner copy, registered integrations, and consent versioning. Non-essential scripts must be registered here or through the PHP API so they can be deferred until consent exists.',
 	'ACP_CONSENTMANAGER_CATEGORIES'					=> 'Consent categories',
 	'ACP_CONSENTMANAGER_CATEGORIES_EXPLAIN'			=> 'Necessary cookies are always active. Optional categories can be disabled globally when not needed.',
@@ -43,6 +41,4 @@ $lang = array_merge($lang, array(
 	'ACP_CONSENTMANAGER_TEXT_REQUIRED'				=> 'The banner message cannot be empty.',
 	'ACP_CONSENTMANAGER_INVALID_INTEGRATIONS'		=> 'The integrations field must contain a valid JSON array.',
 	'ACP_CONSENTMANAGER_INVALID_INTEGRATION_ENTRY'	=> 'Integration entry %1$s is invalid. Each entry must include a safe id, supported category, and valid script source URL.',
-	'LOG_CONSENTMANAGER_UPDATED'					=> '<strong>Updated Consent Manager settings</strong>',
-	'LOG_CONSENTMANAGER_REPROMPT'					=> '<strong>Forced Consent Manager re-prompt by increasing the consent version</strong>',
 ));

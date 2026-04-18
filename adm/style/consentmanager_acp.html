@@ -15,10 +15,6 @@
 	<fieldset>
 		<legend>{{ lang('ACP_CONSENTMANAGER_CATEGORIES') }}</legend>
 		<dl>
-			<dt><label>{{ lang('CONSENTMANAGER_CATEGORY_NECESSARY') ~ lang('COLON') }}</label><br><span>{{ lang('CONSENTMANAGER_CATEGORY_NECESSARY_EXPLAIN') }}</span></dt>
-			<dd><strong>{{ lang('YES') }}</strong></dd>
-		</dl>
-		<dl>
 			<dt><label>{{ lang('ACP_CONSENTMANAGER_ANALYTICS') ~ lang('COLON') }}</label><br><span>{{ lang('ACP_CONSENTMANAGER_ANALYTICS_EXPLAIN') }}</span></dt>
 			<dd>
 				<label><input type="radio" class="radio" name="consentmanager_analytics_enabled" value="1" {% if S_CONSENTMANAGER_ANALYTICS %}checked="checked"{% endif %}> {{ lang('YES') }}</label>
@@ -49,7 +45,23 @@
 	<fieldset>
 		<legend>{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS') }}</legend>
 		<dl>
-			<dt><label for="consentmanager_integrations">{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS') ~ lang('COLON') }}</label><br><span>{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS_EXPLAIN') }}</span></dt>
+			<dt><label for="consentmanager_integrations">{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS') ~ lang('COLON') }}</label><br><span>{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS_EXPLAIN') }}</span><br>
+				<span><strong>Example:</strong></span>
+				<pre>
+					<code>
+[
+  {
+    "id": "board.analytics",
+    "category": "analytics",
+    "src": "https://cdn.example.com/analytics.js",
+    "label": "Board Analytics",
+    "description": "Loads a simple analytics library after consent.",
+    "async": true
+  }
+]
+					</code>
+				</pre>
+			</dt>
 			<dd><textarea id="consentmanager_integrations" name="consentmanager_integrations" rows="14" cols="90">{{ CONSENTMANAGER_INTEGRATIONS }}</textarea></dd>
 		</dl>
 	</fieldset>

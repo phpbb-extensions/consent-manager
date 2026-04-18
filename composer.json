@@ -8,8 +8,8 @@
 	"license": "GPL-2.0-only",
 	"authors": [
 		{
-			"name": "GitHub Copilot",
-			"role": "Extension Author"
+			"name": "Matt Friedman",
+			"role": "Extensions Development Team Lead"
 		}
 	],
 	"require": {
