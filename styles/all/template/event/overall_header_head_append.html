@@ -1,0 +1,85 @@
+{% if S_CONSENTMANAGER_ENABLED %}
+	{% INCLUDECSS '@phpbb_consentmanager/consentmanager.css' %}
+	<script>
+	(function (window, document) {
+		var config = {{ CONSENTMANAGER_BOOTSTRAP|raw }};
+
+		function parseCookie(name)
+		{
+			var parts = document.cookie ? document.cookie.split('; ') : [];
+			var i;
+
+			for (i = 0; i < parts.length; i++)
+			{
+				if (parts[i].indexOf(name + '=') === 0)
+				{
+					return decodeURIComponent(parts[i].substring(name.length + 1));
+				}
+			}
+
+			return '';
+		}
+
+		function loadState()
+		{
+			var raw = '';
+			var state = null;
+
+			try
+			{
+				if (window.localStorage)
+				{
+					raw = window.localStorage.getItem(config.storageKey) || '';
+				}
+			}
+			catch (error)
+			{
+				raw = '';
+			}
+
+			if (!raw)
+			{
+				raw = parseCookie(config.cookieName);
+			}
+
+			if (!raw)
+			{
+				return null;
+			}
+
+			try
+			{
+				state = JSON.parse(raw);
+			}
+			catch (error)
+			{
+				return null;
+			}
+
+			if (!state || state.version !== config.version || !state.categories || !state.categories.length)
+			{
+				return null;
+			}
+
+			return state;
+		}
+
+		var stub = window.consentManager || {};
+		stub._queue = stub._queue || [];
+		stub.registerScript = stub.registerScript || function (id, options) {
+			stub._queue.push(['registerScript', id, options]);
+		};
+		stub.onChange = stub.onChange || function (callback) {
+			stub._queue.push(['onChange', callback]);
+		};
+		stub.openSettings = stub.openSettings || function () {
+			stub._queue.push(['openSettings']);
+		};
+		stub.hasConsent = stub.hasConsent || function (category) {
+			var state = loadState();
+			return category === 'necessary' || !!(state && state.categories.indexOf(category) !== -1);
+		};
+		window.consentManager = stub;
+	})(window, document);
+	</script>
+{% endif %}

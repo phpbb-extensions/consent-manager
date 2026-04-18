@@ -1,0 +1,72 @@
+{% include 'overall_header.html' %}
+
+<h1>{{ lang('ACP_CONSENTMANAGER') }}</h1>
+
+<p>{{ lang('ACP_CONSENTMANAGER_EXPLAIN') }}</p>
+
+{% if S_ERROR %}
+	<div class="errorbox">
+		<h3>{{ lang('WARNING') }}</h3>
+		<p>{{ ERROR_MSG }}</p>
+	</div>
+{% endif %}
+
+<form id="acp_consentmanager" method="post" action="{{ U_ACTION }}">
+	<fieldset>
+		<legend>{{ lang('ACP_CONSENTMANAGER_CATEGORIES') }}</legend>
+		<dl>
+			<dt><label>{{ lang('CONSENTMANAGER_CATEGORY_NECESSARY') ~ lang('COLON') }}</label><br><span>{{ lang('CONSENTMANAGER_CATEGORY_NECESSARY_EXPLAIN') }}</span></dt>
+			<dd><strong>{{ lang('YES') }}</strong></dd>
+		</dl>
+		<dl>
+			<dt><label>{{ lang('ACP_CONSENTMANAGER_ANALYTICS') ~ lang('COLON') }}</label><br><span>{{ lang('ACP_CONSENTMANAGER_ANALYTICS_EXPLAIN') }}</span></dt>
+			<dd>
+				<label><input type="radio" class="radio" name="consentmanager_analytics_enabled" value="1" {% if S_CONSENTMANAGER_ANALYTICS %}checked="checked"{% endif %}> {{ lang('YES') }}</label>
+				<label><input type="radio" class="radio" name="consentmanager_analytics_enabled" value="0" {% if not S_CONSENTMANAGER_ANALYTICS %}checked="checked"{% endif %}> {{ lang('NO') }}</label>
+			</dd>
+		</dl>
+		<dl>
+			<dt><label>{{ lang('ACP_CONSENTMANAGER_MARKETING') ~ lang('COLON') }}</label><br><span>{{ lang('ACP_CONSENTMANAGER_MARKETING_EXPLAIN') }}</span></dt>
+			<dd>
+				<label><input type="radio" class="radio" name="consentmanager_marketing_enabled" value="1" {% if S_CONSENTMANAGER_MARKETING %}checked="checked"{% endif %}> {{ lang('YES') }}</label>
+				<label><input type="radio" class="radio" name="consentmanager_marketing_enabled" value="0" {% if not S_CONSENTMANAGER_MARKETING %}checked="checked"{% endif %}> {{ lang('NO') }}</label>
+			</dd>
+		</dl>
+	</fieldset>
+
+	<fieldset>
+		<legend>{{ lang('ACP_CONSENTMANAGER_BANNER') }}</legend>
+		<dl>
+			<dt><label for="consentmanager_banner_title">{{ lang('ACP_CONSENTMANAGER_BANNER_TITLE') ~ lang('COLON') }}</label><br><span>{{ lang('ACP_CONSENTMANAGER_BANNER_TITLE_EXPLAIN') }}</span></dt>
+			<dd><input type="text" id="consentmanager_banner_title" name="consentmanager_banner_title" size="60" maxlength="255" value="{{ CONSENTMANAGER_BANNER_TITLE }}"></dd>
+		</dl>
+		<dl>
+			<dt><label for="consentmanager_banner_text">{{ lang('ACP_CONSENTMANAGER_BANNER_TEXT') ~ lang('COLON') }}</label><br><span>{{ lang('ACP_CONSENTMANAGER_BANNER_TEXT_EXPLAIN') }}</span></dt>
+			<dd><textarea id="consentmanager_banner_text" name="consentmanager_banner_text" rows="6" cols="70">{{ CONSENTMANAGER_BANNER_TEXT }}</textarea></dd>
+		</dl>
+	</fieldset>
+
+	<fieldset>
+		<legend>{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS') }}</legend>
+		<dl>
+			<dt><label for="consentmanager_integrations">{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS') ~ lang('COLON') }}</label><br><span>{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS_EXPLAIN') }}</span></dt>
+			<dd><textarea id="consentmanager_integrations" name="consentmanager_integrations" rows="14" cols="90">{{ CONSENTMANAGER_INTEGRATIONS }}</textarea></dd>
+		</dl>
+	</fieldset>
+
+	<fieldset>
+		<legend>{{ lang('ACP_CONSENTMANAGER_VERSION') }}</legend>
+		<dl>
+			<dt><label>{{ lang('ACP_CONSENTMANAGER_VERSION') ~ lang('COLON') }}</label><br><span>{{ lang('ACP_CONSENTMANAGER_VERSION_EXPLAIN') }}</span></dt>
+			<dd><strong>{{ CONSENTMANAGER_VERSION }}</strong></dd>
+		</dl>
+	</fieldset>
+
+	<fieldset class="submit-buttons">
+		<input class="button1" type="submit" id="submit" name="submit" value="{{ lang('SUBMIT') }}">&nbsp;
+		<input class="button2" type="submit" id="reset_consent" name="reset_consent" value="{{ lang('ACP_CONSENTMANAGER_FORCE_REPROMPT') }}">
+		{{ S_FORM_TOKEN }}
+	</fieldset>
+</form>
+
+{% include 'overall_footer.html' %}

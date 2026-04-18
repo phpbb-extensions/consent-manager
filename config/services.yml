@@ -1,0 +1,48 @@
+imports:
+    - { resource: tables.yml }
+
+services:
+    phpbb.consentmanager.service:
+        class: phpbb\consentmanager\service\consent_manager
+        arguments:
+            - '@config'
+            - '@config_text'
+            - '@language'
+
+    phpbb.consentmanager.log_manager:
+        class: phpbb\consentmanager\service\log_manager
+        arguments:
+            - '@config'
+            - '@dbal.conn'
+            - '@dispatcher'
+            - '@user'
+            - '%tables.phpbb.consentmanager.consent_logs%'
+
+    phpbb.consentmanager.listener:
+        class: phpbb\consentmanager\event\listener
+        arguments:
+            - '@controller.helper'
+            - '@dispatcher'
+            - '@language'
+            - '@phpbb.consentmanager.service'
+            - '@template'
+        tags:
+            - { name: event.listener }
+
+    phpbb.consentmanager.controller.acp:
+        class: phpbb\consentmanager\controller\acp_controller
+        arguments:
+            - '@config'
+            - '@config_text'
+            - '@language'
+            - '@log'
+            - '@phpbb.consentmanager.service'
+            - '@request'
+            - '@template'
+            - '@user'
+
+    phpbb.consentmanager.controller.log:
+        class: phpbb\consentmanager\controller\log_controller
+        arguments:
+            - '@phpbb.consentmanager.log_manager'
+            - '@phpbb.consentmanager.service'

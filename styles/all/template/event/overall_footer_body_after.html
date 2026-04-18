@@ -1,0 +1,5 @@
+{% if S_CONSENTMANAGER_ENABLED %}
+	<div id="consent-manager-root" class="consent-manager-root"></div>
+	<script id="consent-manager-data" type="application/json">{{ CONSENTMANAGER_PAYLOAD|raw }}</script>
+	{% INCLUDEJS '@phpbb_consentmanager/js/consentmanager.js' %}
+{% endif %}

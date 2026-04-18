@@ -1,0 +1,4 @@
+phpbb_consentmanager_log_controller:
+    path: /consent/log
+    defaults: { _controller: phpbb.consentmanager.controller.log:log }
+    methods: [POST]

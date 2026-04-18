@@ -1,0 +1,2 @@
+parameters:
+    tables.phpbb.consentmanager.consent_logs: '%core.table_prefix%consentmanager_logs'
