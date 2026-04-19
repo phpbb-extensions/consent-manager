@@ -138,7 +138,6 @@ class consent_manager implements consent_manager_interface
 				'customize' => $this->language->lang('CONSENTMANAGER_CUSTOMIZE'),
 				'savePreferences' => $this->language->lang('CONSENTMANAGER_SAVE_PREFERENCES'),
 				'close' => $this->language->lang('CLOSE_WINDOW'),
-				'serviceListHeading' => $this->language->lang('CONSENTMANAGER_SERVICE_LIST_HEADING'),
 				'alwaysActive' => $this->language->lang('CONSENTMANAGER_ALWAYS_ACTIVE'),
 				'allowed' => $this->language->lang('CONSENTMANAGER_ALLOWED'),
 				'settingsTitle' => $this->language->lang('CONSENTMANAGER_SETTINGS_TITLE'),

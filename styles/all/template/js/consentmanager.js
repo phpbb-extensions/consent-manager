@@ -696,7 +696,7 @@
 
 			if (services.length)
 			{
-				serviceHtml += '<div class="consent-manager-category-services"><strong>' + escapeHtml(payload.strings.serviceListHeading) + '</strong><ul>';
+				serviceHtml += '<div class="consent-manager-category-services"><ul>';
 				for (serviceIndex = 0; serviceIndex < services.length; serviceIndex++)
 				{
 					serviceHtml += '<li><strong>' + escapeHtml(services[serviceIndex].label) + '</strong>';
