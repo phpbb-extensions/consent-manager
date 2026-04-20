@@ -9,6 +9,9 @@ services:
             - '@config_text'
             - '@language'
             - '@dispatcher'
+            - '@template.twig.environment'
+            - '@path_helper'
+            - '@filesystem'
 
     phpbb.consentmanager.log_manager:
         class: phpbb\consentmanager\service\log_manager

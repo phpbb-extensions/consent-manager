@@ -13,7 +13,12 @@ namespace phpbb\consentmanager\service;
 use phpbb\config\config;
 use phpbb\config\db_text;
 use phpbb\event\dispatcher_interface;
+use phpbb\filesystem\filesystem;
 use phpbb\language\language;
+use phpbb\path_helper;
+use phpbb\template\asset;
+use phpbb\template\twig\environment;
+use Twig\Error\LoaderError;
 
 class consent_manager implements consent_manager_interface
 {
@@ -32,22 +37,35 @@ class consent_manager implements consent_manager_interface
 	/** @var dispatcher_interface */
 	protected $dispatcher;
 
+	/** @var environment */
+	protected $twig_environment;
+
+	/** @var path_helper */
+	protected $path_helper;
+
+	/** @var filesystem */
+	protected $filesystem;
+
 	/** @var array */
 	protected $registrations = [];
 
-	public function __construct(config $config, db_text $config_text, language $language, dispatcher_interface $dispatcher)
+	public function __construct(config $config, db_text $config_text, language $language, dispatcher_interface $dispatcher, environment $twig_environment, path_helper $path_helper, filesystem $filesystem)
 	{
 		$this->config = $config;
 		$this->config_text = $config_text;
 		$this->language = $language;
 		$this->dispatcher = $dispatcher;
+		$this->twig_environment = $twig_environment;
+		$this->path_helper = $path_helper;
+		$this->filesystem = $filesystem;
 	}
 
 	/**
 	 * Register a consent-aware service or script bundle.
 	 *
 	 * The definition must provide a supported category. Script definitions may
-	 * provide either a script source URL or inline JavaScript, but not both.
+	 * provide either a script source URL, a local asset reference, or inline
+	 * JavaScript, but not more than one execution source.
 	 *
 	 * @param string $id Unique registration id
 	 * @param array  $definition Registration metadata and scripts
@@ -517,13 +535,25 @@ class consent_manager implements consent_manager_interface
 
 		$src = isset($definition['src']) ? trim((string) $definition['src']) : '';
 		$inline = isset($definition['inline']) ? trim((string) $definition['inline']) : '';
+		$asset_path = isset($definition['asset']) ? trim((string) $definition['asset']) : '';
+		$defined_sources = 0;
 
-		if ($src === '' && $inline === '')
+		if ($src !== '')
 		{
-			return [];
+			$defined_sources++;
 		}
 
-		if ($src !== '' && $inline !== '')
+		if ($inline !== '')
+		{
+			$defined_sources++;
+		}
+
+		if ($asset_path !== '')
+		{
+			$defined_sources++;
+		}
+
+		if ($defined_sources !== 1)
 		{
 			return [];
 		}
@@ -531,6 +561,15 @@ class consent_manager implements consent_manager_interface
 		if ($src !== '' && !$this->is_valid_script_source($src))
 		{
 			return [];
+		}
+
+		if ($asset_path !== '')
+		{
+			$src = $this->resolve_local_asset_source($asset_path);
+			if ($src === '')
+			{
+				return [];
+			}
 		}
 
 		return [
@@ -591,6 +630,57 @@ class consent_manager implements consent_manager_interface
 		}
 
 		return !isset($parts['scheme']) || in_array(strtolower($parts['scheme']), ['http', 'https'], true);
+	}
+
+	protected function resolve_local_asset_source($asset_path)
+	{
+		$template_asset = new asset($asset_path, $this->path_helper, $this->filesystem);
+		$local_file = '';
+
+		if (!$this->is_valid_local_asset_path($asset_path) || !$template_asset->is_relative())
+		{
+			return '';
+		}
+
+		if (substr($asset_path, 0, 2) !== './')
+		{
+			$local_file = $this->twig_environment->get_phpbb_root_path() . $template_asset->get_path();
+			if (!file_exists($local_file))
+			{
+				try
+				{
+					$local_file = $this->twig_environment->findTemplate($template_asset->get_path());
+					$template_asset->set_path($local_file, true);
+				}
+				catch (LoaderError $error)
+				{
+					return '';
+				}
+			}
+		}
+
+		if ($template_asset->is_relative())
+		{
+			$template_asset->add_assets_version($this->config['assets_version']);
+		}
+
+		return html_entity_decode($template_asset->get_url(), ENT_QUOTES, 'UTF-8');
+	}
+
+	protected function is_valid_local_asset_path($asset_path)
+	{
+		if ($asset_path === '' || preg_match('/[<>"\']/', $asset_path))
+		{
+			return false;
+		}
+
+		$parts = parse_url($asset_path);
+		if ($parts === false || isset($parts['scheme']) || isset($parts['host']) || strpos($asset_path, '//') === 0)
+		{
+			return false;
+		}
+
+		return isset($parts['path']) && $parts['path'] !== '' && substr($parts['path'], 0, 1) !== '/';
 	}
 
 	protected function is_valid_identifier($identifier)
