@@ -1,5 +1,7 @@
 # Consent Manager
 
+> This extension is under development and will become available on [phpBB.com](https://phpbb.com) when it's ready
+
 Consent Manager adds a cookie and tracking consent system to phpBB.
 
 It gives your board a clear consent banner, a settings modal, category-based choices, and a central place for extensions to declare analytics, advertising, and other tracking-related scripts. Visitors can accept all, reject all, or choose categories individually, and they can reopen their settings later from the footer.
@@ -12,7 +14,7 @@ Out of the box, the extension supports these categories:
 
 It also includes ACP settings for category availability, simple admin-managed integrations, server-side logging of consent decisions, and consent version resets.
 
-Consent Manager is designed to coordinate consent for **cooperating integrations**.
+Consent Manager is designed to coordinate consent for **cooperating extensions**.
 
 ## For extension authors
 
@@ -37,12 +39,22 @@ Listen to `phpbb.consentmanager.collect_registrations` and register your service
 Basic example:
 
 ```php
-$consent_manager->register('ext.example.analytics', [
-	'label' => 'Example Analytics',
-	'category' => 'analytics',
-	'description' => 'Tracks page views after analytics consent is granted.',
-	'scripts' => [],
-]);
+public static function getSubscribedEvents()
+{
+	return ['phpbb.consentmanager.collect_registrations' => 'register_analytics'];
+}
+
+public function register_analytics($event)
+{
+	$consent_manager = $event['consent_manager'];
+
+	$consent_manager->register('ext.example.analytics', [
+		'label' => 'Example Analytics',
+		'category' => 'analytics',
+		'description' => 'Tracks page views after analytics consent is granted.',
+		'scripts' => [],
+	]);
+}
 ```
 
 That example registers the integration for display in the consent UI, but does **not** ask Consent Manager to load any script files for you.
@@ -84,7 +96,7 @@ For extension-owned JavaScript files that you normally load with `INCLUDEJS`, th
 - `src` must be an `http`, `https`, or relative URL
 - unsafe attributes such as event handlers are rejected
 
-### 2. If your extension already uses INCLUDEJS
+### 2. If your extension uses INCLUDEJS
 
 If your extension already loads a normal JS file through `INCLUDEJS`, you usually do **not** need to redesign the extension.
 
@@ -201,3 +213,7 @@ This is mainly for cases where a board admin wants to add a straightforward exte
 ACP-managed integrations are intentionally limited to simple metadata plus a script `src`. They do **not** allow arbitrary inline JavaScript.
 
 For full extension development, PHP registration remains the preferred path.
+
+## License
+
+[GNU General Public License v2](license.txt)
