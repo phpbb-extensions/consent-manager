@@ -555,6 +555,14 @@ class consent_manager implements consent_manager_interface
 	protected function collect_registrations()
 	{
 		$consent_manager = $this;
+
+		/**
+		* Event to allow extensions to register consent-aware integrations.
+		*
+		* @event phpbb.consentmanager.collect_registrations
+		* @var object consent_manager Consent manager service
+		* @since 1.0.0
+		*/
 		$vars = ['consent_manager'];
 		extract($this->dispatcher->trigger_event('phpbb.consentmanager.collect_registrations', compact($vars)));
 	}
@@ -804,7 +812,6 @@ class consent_manager implements consent_manager_interface
 	protected function resolve_local_asset_source($asset_path)
 	{
 		$template_asset = new asset($asset_path, $this->path_helper, $this->filesystem);
-		$local_file = '';
 
 		if (!$this->is_valid_local_asset_path($asset_path) || !$template_asset->is_relative())
 		{

@@ -12,7 +12,6 @@ namespace phpbb\consentmanager\service;
 
 use phpbb\config\config;
 use phpbb\db\driver\driver_interface;
-use phpbb\event\dispatcher_interface;
 use phpbb\log\log as phpbb_log;
 use phpbb\user;
 
@@ -27,9 +26,6 @@ class log_manager
 	/** @var phpbb_log */
 	protected $log;
 
-	/** @var dispatcher_interface */
-	protected $dispatcher;
-
 	/** @var user */
 	protected $user;
 
@@ -39,19 +35,17 @@ class log_manager
 	/**
 	 * Constructor.
 	 *
-	 * @param config               $config Config service
-	 * @param driver_interface     $db Database connection
-	 * @param phpbb_log            $log phpBB log service
-	 * @param dispatcher_interface $dispatcher Event dispatcher
-	 * @param user                 $user Current user
-	 * @param string               $consent_logs_table Consent log table name
+	 * @param config           $config Config service
+	 * @param driver_interface $db Database connection
+	 * @param phpbb_log        $log phpBB log service
+	 * @param user             $user Current user
+	 * @param string           $consent_logs_table Consent log table name
 	 */
-	public function __construct(config $config, driver_interface $db, phpbb_log $log, dispatcher_interface $dispatcher, user $user, $consent_logs_table)
+	public function __construct(config $config, driver_interface $db, phpbb_log $log, user $user, $consent_logs_table)
 	{
 		$this->config = $config;
 		$this->db = $db;
 		$this->log = $log;
-		$this->dispatcher = $dispatcher;
 		$this->user = $user;
 		$this->consent_logs_table = $consent_logs_table;
 	}
@@ -75,9 +69,6 @@ class log_manager
 
 		$sql = 'INSERT INTO ' . $this->consent_logs_table . ' ' . $this->db->sql_build_array('INSERT', $record);
 		$this->db->sql_query($sql);
-
-		$vars = ['record'];
-		extract($this->dispatcher->trigger_event('phpbb.consentmanager.after_log', compact($vars)));
 	}
 
 	/**

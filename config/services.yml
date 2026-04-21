@@ -19,7 +19,6 @@ services:
             - '@config'
             - '@dbal.conn'
             - '@log'
-            - '@dispatcher'
             - '@user'
             - '%tables.phpbb.consentmanager.consent_logs%'
 
