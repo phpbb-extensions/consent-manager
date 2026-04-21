@@ -62,6 +62,7 @@ Registration rules:
 - each script entry may define exactly one of `src`, `asset`, or `inline`
 - `src` must be an `http`, `https`, or relative URL
 - `asset` must be a local phpBB asset path such as `@vendor_extension/js/file.js`
+- `wait_for_dom_ready` may be set to `true` for PHP-registered scripts that should only be injected after `DOMContentLoaded`
 - unsafe attributes such as event handlers are rejected
 
 ### 2. If your extension uses INCLUDEJS
@@ -79,6 +80,7 @@ $consent_manager->register('ext.example.analytics', [
 		[
 			'id' => 'ext.example.analytics.file',
 			'asset' => '@ext_example/js/analytics.js',
+			'wait_for_dom_ready' => true,
 		],
 	],
 ]);
@@ -93,7 +95,7 @@ Then keep your normal `INCLUDEJS` line only as a fallback for cases where Consen
 ```
 Use the template flag for the category your integration belongs to, such as `S_CONSENTMANAGER_ANALYTICS_ENABLED` or `S_CONSENTMANAGER_MARKETING_ENABLED`.
 
-That is the preferred pattern for extension-owned JS files. Consent Manager loads the registered file after consent when it is available to do so. Otherwise, your normal `INCLUDEJS` path still runs and your extension behaves as usual.
+That is the preferred pattern for extension-owned JS files. Consent Manager loads the registered file after consent when it is available to do so. Add `wait_for_dom_ready => true` when the file should wait until `DOMContentLoaded`, which is useful for scripts that normally rely on phpBB's footer `INCLUDEJS` timing. Otherwise, your normal `INCLUDEJS` path still runs and your extension behaves as usual.
 
 ### 3. If your extension outputs direct script tags
 

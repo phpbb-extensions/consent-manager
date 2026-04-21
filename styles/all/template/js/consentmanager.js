@@ -473,6 +473,11 @@
 			return false;
 		}
 
+		if (script.wait_for_dom_ready && document.readyState === 'loading')
+		{
+			return false;
+		}
+
 		element = document.createElement('script');
 		element.type = 'text/javascript';
 
@@ -520,6 +525,7 @@
 			inline: options.inline ? String(options.inline) : '',
 			async: !!options.async,
 			defer: !!options.defer,
+			wait_for_dom_ready: !!options.wait_for_dom_ready,
 			attributes: options.attributes || {}
 		};
 
@@ -1123,7 +1129,10 @@
 
 	if (document.readyState === 'loading')
 	{
-		document.addEventListener('DOMContentLoaded', renderUi);
+		document.addEventListener('DOMContentLoaded', function() {
+			processRegisteredScripts();
+			renderUi();
+		});
 	}
 	else
 	{

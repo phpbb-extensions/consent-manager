@@ -735,6 +735,7 @@ class consent_manager implements consent_manager_interface
 			'inline' => $inline,
 			'async' => isset($definition['async']) ? (bool) $definition['async'] : ($src !== ''),
 			'defer' => isset($definition['defer']) ? (bool) $definition['defer'] : false,
+			'wait_for_dom_ready' => !empty($definition['wait_for_dom_ready']),
 			'attributes' => $this->normalize_attributes($definition['attributes'] ?? []),
 		];
 	}
