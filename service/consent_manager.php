@@ -164,12 +164,10 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function get_acp_template_data()
 	{
-		$integrations = (string) $this->config_text->get('consentmanager_integrations');
-
 		return [
 			'S_CONSENTMANAGER_ANALYTICS'	=> (bool) $this->config['consentmanager_analytics_enabled'],
 			'S_CONSENTMANAGER_MARKETING'	=> (bool) $this->config['consentmanager_marketing_enabled'],
-			'CONSENTMANAGER_INTEGRATIONS'	=> $integrations !== '' ? $integrations : '[]',
+			'CONSENTMANAGER_INTEGRATIONS'	=> $this->get_acp_integrations_json(),
 			'CONSENTMANAGER_VERSION'		=> $this->get_version(),
 		];
 	}
@@ -577,13 +575,25 @@ class consent_manager implements consent_manager_interface
 	 */
 	protected function normalize_integrations_json($input, array &$errors = [])
 	{
-		$integrations = $this->normalize_integrations($input, $errors);
+		if (is_string($input))
+		{
+			$json = trim($input);
+			if ($json === '')
+			{
+				return '[]';
+			}
+
+			$this->normalize_integrations($json, $errors);
+			return empty($errors) ? $json : '[]';
+		}
+
+		$this->normalize_integrations($input, $errors);
 		if (!empty($errors))
 		{
 			return '[]';
 		}
 
-		$json = json_encode($integrations, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+		$json = json_encode($input, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 		if ($json === false)
 		{
 			$errors[] = $this->language->lang('ACP_CONSENTMANAGER_INVALID_INTEGRATIONS');
@@ -591,6 +601,34 @@ class consent_manager implements consent_manager_interface
 		}
 
 		return $json;
+	}
+
+	/**
+	 * Return the stored ACP integrations JSON formatted for textarea output.
+	 *
+	 * @return string
+	 */
+	protected function get_acp_integrations_json()
+	{
+		$json = trim((string) $this->config_text->get('consentmanager_integrations'));
+		if ($json === '')
+		{
+			return '[]';
+		}
+
+		$decoded = json_decode($json, true);
+		if (json_last_error() !== JSON_ERROR_NONE)
+		{
+			return $json;
+		}
+
+		$pretty_json = json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+		if ($pretty_json === false)
+		{
+			return $json;
+		}
+
+		return $pretty_json;
 	}
 
 	/**
