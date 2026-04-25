@@ -49,6 +49,9 @@ class consent_manager implements consent_manager_interface
 	/** @var array */
 	protected $registrations = [];
 
+	/** @var bool */
+	protected $registrations_collected = false;
+
 	/**
 	 * Constructor.
 	 *
@@ -155,6 +158,52 @@ class consent_manager implements consent_manager_interface
 			'S_CONSENTMANAGER_MARKETING_ENABLED'	=> !empty($categories['marketing']['enabled']),
 			'CONSENTMANAGER_PAYLOAD'				=> json_encode($payload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT),
 		];
+	}
+
+	/**
+	 * Build template variable data for categories and services in the frontend consent UI.
+	 *
+	 * Returns an array of enabled categories, each with a nested 'services' array,
+	 * shaped for use with assign_block_vars('CONSENTMANAGER_CATEGORIES', ...) and
+	 * assign_block_vars('CONSENTMANAGER_CATEGORIES.CONSENTMANAGER_SERVICES', ...).
+	 *
+	 * @return array
+	 */
+	public function get_frontend_category_data()
+	{
+		$services_by_category = [];
+		foreach ($this->get_services() as $service)
+		{
+			$services_by_category[$service['category']][] = $service;
+		}
+
+		$result = [];
+		foreach ($this->get_categories() as $category)
+		{
+			if (!$category['enabled'])
+			{
+				continue;
+			}
+
+			$category_services = [];
+			foreach ($services_by_category[$category['id']] ?? [] as $service)
+			{
+				$category_services[] = [
+					'LABEL'       => $service['label'],
+					'DESCRIPTION' => $service['description'],
+				];
+			}
+
+			$result[] = [
+				'ID'          => $category['id'],
+				'LABEL'       => $category['label'],
+				'DESCRIPTION' => $category['description'],
+				'REQUIRED'    => $category['required'],
+				'services'    => $category_services,
+			];
+		}
+
+		return $result;
 	}
 
 	/**
@@ -283,22 +332,7 @@ class consent_manager implements consent_manager_interface
 			'enabledCategories' => $this->get_enabled_category_ids($categories),
 			'optionalCategories' => $this->get_optional_category_ids($categories),
 			'categories' => array_values($categories),
-			'services' => array_values($services),
 			'scripts' => array_values($scripts),
-			'banner' => [
-				'title' => $this->language->lang('CONSENTMANAGER_DEFAULT_BANNER_TITLE'),
-				'text' => $this->language->lang('CONSENTMANAGER_DEFAULT_BANNER_TEXT'),
-			],
-			'strings' => [
-				'acceptAll' => $this->language->lang('CONSENTMANAGER_ACCEPT_ALL'),
-				'rejectAll' => $this->language->lang('CONSENTMANAGER_REJECT_ALL'),
-				'customize' => $this->language->lang('CONSENTMANAGER_CUSTOMIZE'),
-				'savePreferences' => $this->language->lang('CONSENTMANAGER_SAVE_PREFERENCES'),
-				'close' => $this->language->lang('CLOSE_WINDOW'),
-				'alwaysActive' => $this->language->lang('CONSENTMANAGER_ALWAYS_ACTIVE'),
-				'allowed' => $this->language->lang('CONSENTMANAGER_ALLOWED'),
-				'settingsTitle' => $this->language->lang('CONSENTMANAGER_SETTINGS_TITLE'),
-			],
 			'logEndpoint' => $log_url,
 			'logHash' => $log_hash,
 		];
@@ -343,6 +377,8 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function get_services()
 	{
+		$this->collect_registrations();
+
 		$services = $this->registrations;
 
 		foreach ($this->get_configured_integrations() as $integration)
@@ -558,6 +594,12 @@ class consent_manager implements consent_manager_interface
 	 */
 	protected function collect_registrations()
 	{
+		if ($this->registrations_collected)
+		{
+			return;
+		}
+
+		$this->registrations_collected = true;
 		$consent_manager = $this;
 
 		/**

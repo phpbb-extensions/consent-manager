@@ -1,6 +1,53 @@
 {% if S_CONSENTMANAGER_ENABLED %}
-	<div id="consent-manager-root" class="consent-manager-root"></div>
-	<noscript>
-		<div class="consent-manager-noscript">{{ lang('CONSENTMANAGER_NOSCRIPT') }}</div>
-	</noscript>
+<div id="consent-manager-root" class="consent-manager-root">
+	<div class="consent-manager-banner" id="consent-manager-banner" role="region" aria-labelledby="consent-manager-banner-title" aria-describedby="consent-manager-banner-copy" hidden="hidden">
+		<h2 class="consent-manager-heading" id="consent-manager-banner-title">{{ lang('CONSENTMANAGER_DEFAULT_BANNER_TITLE') }}</h2>
+		<p class="consent-manager-copy" id="consent-manager-banner-copy">{{ lang('CONSENTMANAGER_DEFAULT_BANNER_TEXT') }}</p>
+		<div class="consent-manager-actions">
+			<button type="button" class="consent-manager-button" data-consent-action="accept-all">{{ lang('CONSENTMANAGER_ACCEPT_ALL') }}</button>
+			<button type="button" class="consent-manager-button" data-consent-action="reject-all">{{ lang('CONSENTMANAGER_REJECT_ALL') }}</button>
+			<button type="button" class="consent-manager-button" data-consent-action="open-settings">{{ lang('CONSENTMANAGER_CUSTOMIZE') }}</button>
+		</div>
+	</div>
+	<div class="consent-manager-modal" id="consent-manager-modal" hidden="hidden" role="dialog" aria-modal="true" aria-labelledby="consent-manager-modal-title" aria-describedby="consent-manager-modal-copy">
+		<div class="consent-manager-modal-panel" tabindex="-1">
+			<div class="consent-manager-actions" style="justify-content: space-between; margin-top: 0;">
+				<h2 class="consent-manager-heading" id="consent-manager-modal-title" style="margin: 0;">{{ lang('CONSENTMANAGER_SETTINGS_TITLE') }}</h2>
+				<button type="button" class="consent-manager-button" data-consent-action="close-settings">{{ lang('CLOSE_WINDOW') }}</button>
+			</div>
+			<p class="consent-manager-copy" id="consent-manager-modal-copy">{{ lang('CONSENTMANAGER_DEFAULT_BANNER_TEXT') }}</p>
+			{% for cat in CONSENTMANAGER_CATEGORIES %}
+			<section class="consent-manager-category">
+				<div class="consent-manager-category-header">
+					<div>
+						<h3 class="consent-manager-category-title">{{ cat.LABEL }}</h3>
+						<p class="consent-manager-category-description">{{ cat.DESCRIPTION }}</p>
+						{% if cat.CONSENTMANAGER_SERVICES is not empty %}
+						<div class="consent-manager-category-services">
+							<ul>
+								{% for service in cat.CONSENTMANAGER_SERVICES %}
+								<li><strong>{{ service.LABEL }}</strong>{% if service.DESCRIPTION %}{{ lang('COLON')}} {{ service.DESCRIPTION }}{% endif %}</li>
+								{% endfor %}
+							</ul>
+						</div>
+						{% endif %}
+					</div>
+					<label class="consent-manager-toggle">
+						<input type="checkbox" data-consent-toggle="{{ cat.ID }}"{% if cat.REQUIRED %} checked="checked" disabled="disabled"{% endif %}>
+						<span>{{ cat.REQUIRED ? lang('CONSENTMANAGER_ALWAYS_ACTIVE') : lang('CONSENTMANAGER_ALLOWED') }}</span>
+					</label>
+				</div>
+			</section>
+			{% endfor %}
+			<div class="consent-manager-actions">
+				<button type="button" class="consent-manager-button consent-manager-button-primary" data-consent-action="save-settings">{{ lang('CONSENTMANAGER_SAVE_PREFERENCES') }}</button>
+				<button type="button" class="consent-manager-button" data-consent-action="accept-all">{{ lang('CONSENTMANAGER_ACCEPT_ALL') }}</button>
+				<button type="button" class="consent-manager-button" data-consent-action="reject-all">{{ lang('CONSENTMANAGER_REJECT_ALL') }}</button>
+			</div>
+		</div>
+	</div>
+</div>
+<noscript>
+	<div class="consent-manager-noscript">{{ lang('CONSENTMANAGER_NOSCRIPT') }}</div>
+</noscript>
 {% endif %}

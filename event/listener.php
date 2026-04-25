@@ -75,5 +75,15 @@ class listener implements EventSubscriberInterface
 			$this->helper->route('phpbb_consentmanager_log_controller'),
 			generate_link_hash('phpbb.consentmanager.log')
 		));
+
+		foreach ($this->consent_manager->get_frontend_category_data() as $category)
+		{
+			$this->template->assign_block_vars('CONSENTMANAGER_CATEGORIES', $category);
+
+			foreach ($category['services'] as $service)
+			{
+				$this->template->assign_block_vars('CONSENTMANAGER_CATEGORIES.CONSENTMANAGER_SERVICES', $service);
+			}
+		}
 	}
 }

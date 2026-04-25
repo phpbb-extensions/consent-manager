@@ -234,7 +234,7 @@ class consent_manager_test extends \phpbb_test_case
 		self::assertSame(array('analytics'), $payload['optionalCategories']);
 		self::assertSame('/app.php/consent/log', $payload['logEndpoint']);
 		self::assertSame('deadbeef', $payload['logHash']);
-		self::assertSame(array('vendor.bundle', 'board.analytics'), array_column($payload['services'], 'id'));
+		self::assertArrayNotHasKey('services', $payload);
 		self::assertSame(array('vendor.bundle.1', 'board.analytics'), array_column($payload['scripts'], 'id'));
 	}
 
@@ -249,7 +249,9 @@ class consent_manager_test extends \phpbb_test_case
 		self::assertTrue($data['S_CONSENTMANAGER_MARKETING_ENABLED']);
 		self::assertSame('/app.php/consent/log?x=<test>', $payload['logEndpoint']);
 		self::assertSame('abc123', $payload['logHash']);
-		self::assertSame($this->language->lang('CONSENTMANAGER_SETTINGS_TITLE'), $payload['strings']['settingsTitle']);
+		self::assertArrayNotHasKey('strings', $payload);
+		self::assertArrayNotHasKey('banner', $payload);
+		self::assertArrayNotHasKey('services', $payload);
 	}
 
 	public function test_get_configured_integrations_normalizes_stored_data()

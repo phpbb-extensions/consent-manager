@@ -668,133 +668,14 @@
 		});
 	}
 
-	function escapeHtml(value)
+	function initUi()
 	{
-		return String(value)
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
-			.replace(/"/g, '&quot;')
-			.replace(/'/g, '&#039;');
-	}
-
-	function ensureRoot()
-	{
-		if (root && root.parentNode)
-		{
-			return root;
-		}
-
 		root = document.getElementById(payload.rootId);
-		if (!root && document.body)
-		{
-			root = document.createElement('div');
-			root.id = payload.rootId;
-			root.className = 'consent-manager-root';
-			document.body.appendChild(root);
-		}
 
-		return root;
-	}
-
-	function groupServices(categoryId)
-	{
-		var services = [];
-		var index;
-
-		for (index = 0; index < payload.services.length; index++)
-		{
-			if (payload.services[index].category === categoryId)
-			{
-				services.push(payload.services[index]);
-			}
-		}
-
-		return services;
-	}
-
-	function renderUi()
-	{
-		var target = ensureRoot();
-		var modalHtml = '';
-		var categoryIndex;
-		var category;
-		var services;
-		var serviceIndex;
-		var serviceHtml;
-
-		if (!target)
+		if (!root)
 		{
 			return;
 		}
-
-		for (categoryIndex = 0; categoryIndex < payload.categories.length; categoryIndex++)
-		{
-			category = payload.categories[categoryIndex];
-			if (!category.enabled)
-			{
-				continue;
-			}
-
-			services = groupServices(category.id);
-			serviceHtml = '';
-
-			if (services.length)
-			{
-				serviceHtml += '<div class="consent-manager-category-services"><ul>';
-				for (serviceIndex = 0; serviceIndex < services.length; serviceIndex++)
-				{
-					serviceHtml += '<li><strong>' + escapeHtml(services[serviceIndex].label) + '</strong>';
-					if (services[serviceIndex].description)
-					{
-						serviceHtml += ': ' + escapeHtml(services[serviceIndex].description);
-					}
-					serviceHtml += '</li>';
-				}
-				serviceHtml += '</ul></div>';
-			}
-
-			modalHtml += ''
-				+ '<section class="consent-manager-category">'
-				+ '<div class="consent-manager-category-header">'
-				+ '<div>'
-				+ '<h3 class="consent-manager-category-title">' + escapeHtml(category.label) + '</h3>'
-				+ '<p class="consent-manager-category-description">' + escapeHtml(category.description) + '</p>'
-				+ serviceHtml
-				+ '</div>'
-				+ '<label class="consent-manager-toggle">'
-				+ '<input type="checkbox" data-consent-toggle="' + escapeHtml(category.id) + '"' + (category.required ? ' checked="checked" disabled="disabled"' : '') + '>'
-				+ '<span>' + escapeHtml(category.required ? payload.strings.alwaysActive : payload.strings.allowed) + '</span>'
-				+ '</label>'
-				+ '</div>'
-				+ '</section>';
-		}
-
-		target.innerHTML = ''
-			+ '<div class="consent-manager-banner" id="consent-manager-banner" role="region" aria-labelledby="consent-manager-banner-title" aria-describedby="consent-manager-banner-copy">'
-			+ '<h2 class="consent-manager-heading" id="consent-manager-banner-title">' + escapeHtml(payload.banner.title) + '</h2>'
-			+ '<p class="consent-manager-copy" id="consent-manager-banner-copy">' + escapeHtml(payload.banner.text) + '</p>'
-			+ '<div class="consent-manager-actions">'
-			+ '<button type="button" class="consent-manager-button" data-consent-action="accept-all">' + escapeHtml(payload.strings.acceptAll) + '</button>'
-			+ '<button type="button" class="consent-manager-button" data-consent-action="reject-all">' + escapeHtml(payload.strings.rejectAll) + '</button>'
-			+ '<button type="button" class="consent-manager-button" data-consent-action="open-settings">' + escapeHtml(payload.strings.customize) + '</button>'
-			+ '</div>'
-			+ '</div>'
-			+ '<div class="consent-manager-modal" id="consent-manager-modal" hidden="hidden" role="dialog" aria-modal="true" aria-labelledby="consent-manager-modal-title" aria-describedby="consent-manager-modal-copy">'
-			+ '<div class="consent-manager-modal-panel" tabindex="-1">'
-			+ '<div class="consent-manager-actions" style="justify-content: space-between; margin-top: 0;">'
-			+ '<h2 class="consent-manager-heading" id="consent-manager-modal-title" style="margin: 0;">' + escapeHtml(payload.strings.settingsTitle) + '</h2>'
-			+ '<button type="button" class="consent-manager-button" data-consent-action="close-settings">' + escapeHtml(payload.strings.close) + '</button>'
-			+ '</div>'
-			+ '<p class="consent-manager-copy" id="consent-manager-modal-copy">' + escapeHtml(payload.banner.text) + '</p>'
-			+ modalHtml
-			+ '<div class="consent-manager-actions">'
-			+ '<button type="button" class="consent-manager-button consent-manager-button-primary" data-consent-action="save-settings">' + escapeHtml(payload.strings.savePreferences) + '</button>'
-			+ '<button type="button" class="consent-manager-button" data-consent-action="accept-all">' + escapeHtml(payload.strings.acceptAll) + '</button>'
-			+ '<button type="button" class="consent-manager-button" data-consent-action="reject-all">' + escapeHtml(payload.strings.rejectAll) + '</button>'
-			+ '</div>'
-			+ '</div>'
-			+ '</div>';
 
 		isRendered = true;
 		updateUi();
@@ -965,6 +846,11 @@
 			checkboxes[index].checked = hasConsent(checkboxes[index].getAttribute('data-consent-toggle'));
 		}
 
+		if (!modal)
+		{
+			return;
+		}
+
 		lastFocusedElement = document.activeElement;
 		modal.hidden = false;
 
@@ -1131,11 +1017,11 @@
 	{
 		document.addEventListener('DOMContentLoaded', function() {
 			processRegisteredScripts();
-			renderUi();
+			initUi();
 		});
 	}
 	else
 	{
-		renderUi();
+		initUi();
 	}
 })(window, document);

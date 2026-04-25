@@ -33,6 +33,13 @@ interface consent_manager_interface
 	public function get_frontend_template_data($log_url, $log_hash);
 
 	/**
+	 * Build template variable data for categories and services in the frontend consent UI.
+	 *
+	 * @return array
+	 */
+	public function get_frontend_category_data();
+
+	/**
 	 * Build template variables for the ACP settings page.
 	 *
 	 * @return array

@@ -81,6 +81,17 @@ class listener_test extends \phpbb_test_case
 				'S_CONSENTMANAGER_ENABLED' => true,
 				'CONSENTMANAGER_PAYLOAD' => '{"version":1}',
 			]);
+		$consent_manager->expects($invoke ? self::once() : self::never())
+			->method('get_frontend_category_data')
+			->willReturn([
+				[
+					'ID'          => 'necessary',
+					'LABEL'       => 'Necessary',
+					'DESCRIPTION' => 'Required cookies.',
+					'REQUIRED'    => true,
+					'services'    => [],
+				],
+			]);
 
 		$template = $this->createMock('\phpbb\template\template');
 		$template->expects($invoke ? self::once() : self::never())
@@ -88,6 +99,15 @@ class listener_test extends \phpbb_test_case
 			->with([
 				'S_CONSENTMANAGER_ENABLED' => true,
 				'CONSENTMANAGER_PAYLOAD' => '{"version":1}',
+			]);
+		$template->expects($invoke ? self::once() : self::never())
+			->method('assign_block_vars')
+			->with('CONSENTMANAGER_CATEGORIES', [
+				'ID'          => 'necessary',
+				'LABEL'       => 'Necessary',
+				'DESCRIPTION' => 'Required cookies.',
+				'REQUIRED'    => true,
+				'services'    => [],
 			]);
 
 		$listener = new \phpbb\consentmanager\event\listener(
