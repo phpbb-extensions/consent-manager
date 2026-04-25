@@ -3,6 +3,7 @@
 > This extension is under development and will become available on [phpBB.com](https://phpbb.com) when it's ready
 
 [![Build Status](https://github.com/phpbb-extensions/consent-manager/actions/workflows/tests.yml/badge.svg)](https://github.com/phpbb-extensions/consent-manager/actions)
+[![codecov](https://codecov.io/gh/phpbb-extensions/consent-manager/graph/badge.svg?token=IE2YWG6N9V)](https://codecov.io/gh/phpbb-extensions/consent-manager)
 
 Consent Manager is a GDPR-ready privacy/cookie consent management solution built for phpBB forums.
 
