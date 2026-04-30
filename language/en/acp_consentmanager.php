@@ -34,4 +34,19 @@ $lang = array_merge($lang, [
 	'ACP_CONSENTMANAGER_INVALID_INTEGRATIONS'		=> 'The integrations field must contain a valid JSON array.',
 	'ACP_CONSENTMANAGER_INVALID_INTEGRATION_ENTRY'	=> 'Integration entry %1$s is invalid. Each entry must include a safe id, supported category, and valid script source URL.',
 	'EXAMPLE'										=> 'Example',
+
+	// Export consent logs
+	'ACP_CONSENTMANAGER_EXPORT_EXPLAIN'				=> 'Download a CSV file of stored consent log records. All fields are optional; leave them blank to export the full log.',
+	'ACP_CONSENTMANAGER_EXPORT_FILTERS'				=> 'Export filters',
+	'ACP_CONSENTMANAGER_EXPORT_DATE_FROM'			=> 'Date from',
+	'ACP_CONSENTMANAGER_EXPORT_DATE_TO'				=> 'Date to',
+	'ACP_CONSENTMANAGER_EXPORT_DATE_EXPLAIN'		=> 'Format: YYYY-MM-DD (UTC). Leave blank to omit this boundary.',
+	'ACP_CONSENTMANAGER_EXPORT_USER_ID'				=> 'User ID',
+	'ACP_CONSENTMANAGER_EXPORT_USER_ID_EXPLAIN'		=> 'Enter a registered user ID to restrict the export to that user\'s consent records. Leave blank to include all users. Note: records for guests use a session-based identifier and cannot be filtered by user ID.',
+	'ACP_CONSENTMANAGER_EXPORT_VERSION'				=> 'Consent version',
+	'ACP_CONSENTMANAGER_EXPORT_VERSION_EXPLAIN'		=> 'Restrict the export to a specific consent version. Leave blank for all versions.',
+	'ACP_CONSENTMANAGER_EXPORT_DOWNLOAD'			=> 'Download CSV',
+	'ACP_CONSENTMANAGER_EXPORT_INVALID_DATE_FROM'	=> 'The "Date from" value is not a valid date. Use the format YYYY-MM-DD.',
+	'ACP_CONSENTMANAGER_EXPORT_INVALID_DATE_TO'		=> 'The "Date to" value is not a valid date. Use the format YYYY-MM-DD.',
+	'ACP_CONSENTMANAGER_EXPORT_DATE_RANGE_INVALID'	=> '"Date from" must not be later than "Date to".',
 ]);

@@ -10,8 +10,8 @@
 
 namespace phpbb\consentmanager\controller;
 
+use phpbb\consentmanager\service\acp_manager;
 use phpbb\consentmanager\service\consent_manager_interface;
-use phpbb\consentmanager\service\log_manager;
 use phpbb\language\language;
 use phpbb\request\request;
 use phpbb\template\template;
@@ -24,8 +24,8 @@ class acp_controller
 	/** @var consent_manager_interface */
 	protected $consent_manager;
 
-	/** @var log_manager */
-	protected $log_manager;
+	/** @var acp_manager */
+	protected $acp_manager;
 
 	/** @var request */
 	protected $request;
@@ -41,15 +41,15 @@ class acp_controller
 	 *
 	 * @param language                  $language Language service
 	 * @param consent_manager_interface $consent_manager Consent manager service
-	 * @param log_manager               $log_manager Consent log manager
+	 * @param acp_manager               $acp_manager ACP manager service
 	 * @param request                   $request Request service
 	 * @param template                  $template Template service
 	 */
-	public function __construct(language $language, consent_manager_interface $consent_manager, log_manager $log_manager, request $request, template $template)
+	public function __construct(language $language, consent_manager_interface $consent_manager, acp_manager $acp_manager, request $request, template $template)
 	{
 		$this->language = $language;
 		$this->consent_manager = $consent_manager;
-		$this->log_manager = $log_manager;
+		$this->acp_manager = $acp_manager;
 		$this->request = $request;
 		$this->template = $template;
 
@@ -79,7 +79,7 @@ class acp_controller
 
 		if ($this->request->is_set_post('submit'))
 		{
-			$this->validate_form_key();
+			$this->validate_form_key('phpbb_consentmanager_acp');
 
 			$errors = [];
 			$saved = $this->consent_manager->save_acp_settings([
@@ -94,16 +94,16 @@ class acp_controller
 				return;
 			}
 
-			$this->log_manager->log_admin_settings_updated();
+			$this->acp_manager->log_admin_settings_updated();
 			trigger_error($this->language->lang('CONFIG_UPDATED') . adm_back_link($this->u_action));
 		}
 
 		if ($this->request->is_set_post('reset_consent'))
 		{
-			$this->validate_form_key();
+			$this->validate_form_key('phpbb_consentmanager_acp');
 
 			$this->consent_manager->reset_consent_version();
-			$this->log_manager->log_admin_reprompt();
+			$this->acp_manager->log_admin_reprompt();
 
 			trigger_error($this->language->lang('ACP_CONSENTMANAGER_REPROMPT_SUCCESS') . adm_back_link($this->u_action));
 		}
@@ -112,12 +112,131 @@ class acp_controller
 	}
 
 	/**
-	 * Assign consent manager settings to the ACP template.
+	 * Handle the ACP export page request.
 	 *
-	 * @param array $errors Validation errors to display
+	 * Displays the filter form on GET. On POST with download_csv, streams a
+	 * CSV file of consent log records matching the supplied filters.
 	 *
 	 * @return void
 	 */
+	public function handle_export()
+	{
+		add_form_key('phpbb_consentmanager_export');
+
+		if ($this->request->is_set_post('download_csv'))
+		{
+			$this->validate_form_key('phpbb_consentmanager_export');
+
+			$errors = [];
+			$filters = $this->parse_export_filters($errors);
+
+			if (!empty($errors))
+			{
+				$this->assign_export_template_vars($errors);
+				return;
+			}
+
+			$this->acp_manager->log_admin_export();
+			$this->send_csv_download($filters);
+		}
+
+		$this->assign_export_template_vars();
+	}
+
+	/**
+	 * Parse and validate filter inputs from the export form.
+	 *
+	 * @param array $errors Reference — validation errors are appended here
+	 *
+	 * @return array Validated filter map (date_from, date_to, user_id, consent_version)
+	 */
+	protected function parse_export_filters(array &$errors)
+	{
+		$date_from_str = trim($this->request->variable('export_date_from', ''));
+		$date_to_str   = trim($this->request->variable('export_date_to', ''));
+		$user_id       = $this->request->variable('export_user_id', 0);
+		$consent_ver   = $this->request->variable('export_consent_version', 0);
+
+		$filters   = [];
+		$date_from = $this->acp_manager->parse_date_filter($date_from_str);
+		$date_to   = $this->acp_manager->parse_date_filter($date_to_str, true);
+
+		if ($date_from_str !== '' && $date_from === false)
+		{
+			$errors[] = $this->language->lang('ACP_CONSENTMANAGER_EXPORT_INVALID_DATE_FROM');
+		}
+
+		if ($date_to_str !== '' && $date_to === false)
+		{
+			$errors[] = $this->language->lang('ACP_CONSENTMANAGER_EXPORT_INVALID_DATE_TO');
+		}
+
+		if ($date_from !== false && $date_to !== false && $date_from > $date_to)
+		{
+			$errors[] = $this->language->lang('ACP_CONSENTMANAGER_EXPORT_DATE_RANGE_INVALID');
+		}
+
+		if (empty($errors))
+		{
+			if ($date_from !== false)
+			{
+				$filters['date_from'] = $date_from;
+			}
+
+			if ($date_to !== false)
+			{
+				$filters['date_to'] = $date_to;
+			}
+		}
+
+		if ($user_id > 0)
+		{
+			$filters['user_id'] = $user_id;
+		}
+
+		if ($consent_ver > 0)
+		{
+			$filters['consent_version'] = $consent_ver;
+		}
+
+		return $filters;
+	}
+
+	protected function send_csv_download(array $filters)
+	{
+		if (ob_get_level())
+		{
+			ob_end_clean();
+		}
+
+		header('Content-Type: text/csv; charset=UTF-8');
+		header('Content-Disposition: attachment; filename="consent_logs.csv"');
+		header('Cache-Control: no-cache, no-store, must-revalidate');
+		header('Pragma: no-cache');
+		header('Expires: 0');
+
+		$handle = fopen('php://output', 'w');
+		fwrite($handle, "\xEF\xBB\xBF"); // UTF-8 BOM for Excel compatibility
+		fputcsv($handle, ['anonymized_id', 'timestamp', 'consent_version', 'categories']);
+		$this->acp_manager->stream_logs_csv($handle, $filters);
+		fclose($handle);
+
+		exit;
+	}
+
+	protected function assign_export_template_vars(array $errors = [])
+	{
+		$this->template->assign_vars([
+			'S_ERROR'            => !empty($errors),
+			'ERROR_MSG'          => implode('<br>', $errors),
+			'EXPORT_DATE_FROM'   => $this->request->variable('export_date_from', ''),
+			'EXPORT_DATE_TO'     => $this->request->variable('export_date_to', ''),
+			'EXPORT_USER_ID'     => $this->request->variable('export_user_id', 0),
+			'EXPORT_CONSENT_VER' => $this->request->variable('export_consent_version', 0),
+			'U_ACTION'           => $this->u_action,
+		]);
+	}
+
 	protected function assign_template_vars(array $errors = [])
 	{
 		$this->template->assign_vars(array_merge(
@@ -130,14 +249,9 @@ class acp_controller
 		));
 	}
 
-	/**
-	 * Ensure the ACP form key is valid before processing changes.
-	 *
-	 * @return void
-	 */
-	protected function validate_form_key()
+	protected function validate_form_key($form_key)
 	{
-		if (!check_form_key('phpbb_consentmanager_acp'))
+		if (!check_form_key($form_key))
 		{
 			trigger_error($this->language->lang('FORM_INVALID') . adm_back_link($this->u_action), E_USER_WARNING);
 		}

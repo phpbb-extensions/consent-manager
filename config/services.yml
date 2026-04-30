@@ -18,6 +18,14 @@ services:
         arguments:
             - '@config'
             - '@dbal.conn'
+            - '@user'
+            - '%tables.phpbb.consentmanager.consent_logs%'
+
+    phpbb.consentmanager.acp_manager:
+        class: phpbb\consentmanager\service\acp_manager
+        arguments:
+            - '@config'
+            - '@dbal.conn'
             - '@log'
             - '@user'
             - '%tables.phpbb.consentmanager.consent_logs%'
@@ -37,7 +45,7 @@ services:
         arguments:
             - '@language'
             - '@phpbb.consentmanager.service'
-            - '@phpbb.consentmanager.log_manager'
+            - '@phpbb.consentmanager.acp_manager'
             - '@request'
             - '@template'
 

@@ -12,7 +12,6 @@ namespace phpbb\consentmanager\service;
 
 use phpbb\config\config;
 use phpbb\db\driver\driver_interface;
-use phpbb\log\log as phpbb_log;
 use phpbb\user;
 
 class log_manager
@@ -22,9 +21,6 @@ class log_manager
 
 	/** @var driver_interface */
 	protected $db;
-
-	/** @var phpbb_log */
-	protected $log;
 
 	/** @var user */
 	protected $user;
@@ -37,15 +33,13 @@ class log_manager
 	 *
 	 * @param config           $config Config service
 	 * @param driver_interface $db Database connection
-	 * @param phpbb_log        $log phpBB log service
 	 * @param user             $user Current user
 	 * @param string           $consent_logs_table Consent log table name
 	 */
-	public function __construct(config $config, driver_interface $db, phpbb_log $log, user $user, $consent_logs_table)
+	public function __construct(config $config, driver_interface $db, user $user, $consent_logs_table)
 	{
 		$this->config = $config;
 		$this->db = $db;
-		$this->log = $log;
 		$this->user = $user;
 		$this->consent_logs_table = $consent_logs_table;
 	}
@@ -69,26 +63,6 @@ class log_manager
 
 		$sql = 'INSERT INTO ' . $this->consent_logs_table . ' ' . $this->db->sql_build_array('INSERT', $record);
 		$this->db->sql_query($sql);
-	}
-
-	/**
-	 * Add an admin log entry for consent settings changes.
-	 *
-	 * @return void
-	 */
-	public function log_admin_settings_updated()
-	{
-		$this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'LOG_CONSENTMANAGER_UPDATED');
-	}
-
-	/**
-	 * Add an admin log entry when users are re-prompted for consent.
-	 *
-	 * @return void
-	 */
-	public function log_admin_reprompt()
-	{
-		$this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'LOG_CONSENTMANAGER_REPROMPT');
 	}
 
 	/**

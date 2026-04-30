@@ -24,9 +24,19 @@ class consentmanager_module
 		$controller = $phpbb_container->get('phpbb.consentmanager.controller.acp');
 		$controller->set_page_url($this->u_action);
 
-		$this->tpl_name = 'consentmanager_acp';
-		$this->page_title = 'ACP_CONSENTMANAGER';
+		switch ($mode)
+		{
+			case 'export':
+				$this->tpl_name = 'consentmanager_acp_export';
+				$this->page_title = 'ACP_CONSENTMANAGER_EXPORT';
+				$controller->handle_export();
+			break;
 
-		$controller->handle();
+			default:
+				$this->tpl_name = 'consentmanager_acp';
+				$this->page_title = 'ACP_CONSENTMANAGER';
+				$controller->handle();
+			break;
+		}
 	}
 }

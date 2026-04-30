@@ -69,47 +69,12 @@ class log_manager_test extends \phpbb_database_test_case
 			FROM phpbb_consentmanager_logs');
 	}
 
-	public function test_log_admin_settings_updated_delegates_to_phpbb_log()
-	{
-		$log = $this->getMockBuilder('\phpbb\log\log')
-			->disableOriginalConstructor()
-			->setMethods(array('add'))
-			->getMock();
-		$log->expects(self::once())
-			->method('add')
-			->with('admin', 7, '127.0.0.1', 'LOG_CONSENTMANAGER_UPDATED');
-
-		$manager = $this->create_manager(7, 'admin-session', $log);
-		$manager->log_admin_settings_updated();
-	}
-
-	public function test_log_admin_reprompt_delegates_to_phpbb_log()
-	{
-		$log = $this->getMockBuilder('\phpbb\log\log')
-			->disableOriginalConstructor()
-			->setMethods(array('add'))
-			->getMock();
-		$log->expects(self::once())
-			->method('add')
-			->with('admin', 7, '127.0.0.1', 'LOG_CONSENTMANAGER_REPROMPT');
-
-		$manager = $this->create_manager(7, 'admin-session', $log);
-		$manager->log_admin_reprompt();
-	}
-
-	protected function create_manager($user_id, $session_id, $log = null)
+	protected function create_manager($user_id, $session_id)
 	{
 		$config = new \phpbb\config\config(array(
 			'rand_seed' => 'random-seed',
 		));
 		$db = $this->new_dbal();
-
-		if ($log === null)
-		{
-			$log = $this->getMockBuilder('\phpbb\log\log')
-				->disableOriginalConstructor()
-				->getMock();
-		}
 
 		$user = new \phpbb\user($this->language, '\phpbb\datetime');
 		$user->data = array(
@@ -121,7 +86,6 @@ class log_manager_test extends \phpbb_database_test_case
 		return new \phpbb\consentmanager\service\log_manager(
 			$config,
 			$db,
-			$log,
 			$user,
 			'phpbb_consentmanager_logs'
 		);

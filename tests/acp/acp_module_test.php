@@ -59,6 +59,11 @@ class acp_module_test extends \phpbb_test_case
 						'auth'	=> 'ext_phpbb/consentmanager && acl_a_board',
 						'cat'	=> ['ACP_CONSENTMANAGER']
 					],
+					'export'	=> [
+						'title'	=> 'ACP_CONSENTMANAGER_EXPORT',
+						'auth'	=> 'ext_phpbb/consentmanager && acl_a_board',
+						'cat'	=> ['ACP_CONSENTMANAGER']
+					],
 				],
 			],
 		], $this->module_manager->get_module_infos('acp', 'consentmanager_module'));
@@ -117,5 +122,34 @@ class acp_module_test extends \phpbb_test_case
 		$p_master->module_ary[0]['is_duplicate'] = 0;
 		$p_master->module_ary[0]['url_extra'] = '';
 		$p_master->load('acp', '\phpbb\consentmanager\acp\consentmanager_module');
+	}
+
+	public function test_main_module_export_mode()
+	{
+		global $phpbb_container;
+
+		$phpbb_container = $this->getMockBuilder('Symfony\Component\DependencyInjection\ContainerInterface')
+			->disableOriginalConstructor()
+			->getMock();
+		$acp_controller = $this->getMockBuilder('\phpbb\consentmanager\controller\acp_controller')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$phpbb_container
+			->expects(self::once())
+			->method('get')
+			->with('phpbb.consentmanager.controller.acp')
+			->willReturn($acp_controller);
+
+		$acp_controller
+			->expects(self::once())
+			->method('handle_export');
+
+		$module = new \phpbb\consentmanager\acp\consentmanager_module();
+		$module->u_action = 'adm.php?i=test&mode=export';
+		$module->main('', 'export');
+
+		self::assertSame('consentmanager_acp_export', $module->tpl_name);
+		self::assertSame('ACP_CONSENTMANAGER_EXPORT', $module->page_title);
 	}
 }
