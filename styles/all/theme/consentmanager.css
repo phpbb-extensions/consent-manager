@@ -1,4 +1,15 @@
 .consent-manager-root {
+	--consent-manager-color-text: #111827;
+	--consent-manager-color-text-muted: #475569;
+	--consent-manager-color-surface: #ffffff;
+	--consent-manager-color-border: rgba(18, 41, 64, 0.16);
+	--consent-manager-color-border-subtle: #e2e8f0;
+	--consent-manager-color-button-border: #1f2937;
+	--consent-manager-color-button-surface: #ffffff;
+	--consent-manager-color-button-surface-hover: #f8fafc;
+	--consent-manager-color-button-primary: #111827;
+	--consent-manager-color-button-primary-hover: #1f2937;
+	--consent-manager-font-size: 0.625rem;
 	position: relative;
 	z-index: 9999;
 }
@@ -13,9 +24,24 @@
 	font-family: inherit;
 }
 
+.consent-manager-banner,
+.consent-manager-modal-panel,
+.consent-manager-noscript {
+	font-size: var(--consent-manager-font-size);
+	line-height: 1.2;
+	background: var(--consent-manager-color-surface);
+	color: var(--consent-manager-color-text);
+}
+
+.consent-manager-banner *,
+.consent-manager-modal-panel *,
+.consent-manager-noscript * {
+	color: inherit;
+	box-sizing: border-box;
+}
+
 .consent-manager-banner {
-	background: #ffffff;
-	border: 1px solid rgba(18, 41, 64, 0.16);
+	border: 1px solid var(--consent-manager-color-border);
 	border-radius: 14px;
 	box-shadow: 0 16px 50px rgba(17, 24, 39, 0.18);
 	position: fixed;
@@ -34,13 +60,17 @@
 }
 
 .consent-manager-heading {
+	font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
 	font-size: 1.2rem;
+	font-weight: normal;
+	border-bottom: 1px solid transparent;
+	color: var(--consent-manager-color-text);
 	margin: 0 0 0.5rem;
 }
 
 .consent-manager-copy {
 	line-height: 1.5;
-	color: #334155;
+	color: var(--consent-manager-color-text-muted);
 	margin: 0;
 }
 
@@ -52,23 +82,32 @@
 }
 
 .consent-manager-button {
+	font-family: Verdana, Helvetica, Arial, sans-serif;
 	font-weight: 600;
-	background: #ffffff;
-	border: 1px solid #1f2937;
+	line-height: 1.2;
+	text-transform: none;
+	background: var(--consent-manager-color-button-surface);
+	background-image: none;
+	border: 1px solid var(--consent-manager-color-button-border);
 	border-radius: 999px;
-	color: #111827;
+	box-shadow: none;
+	text-shadow: none;
+	color: var(--consent-manager-color-text);
 	display: inline-flex;
 	justify-content: center;
 	align-items: center;
 	min-width: 10rem;
 	padding: 0.8rem 1rem;
 	cursor: pointer;
+	-webkit-appearance: none;
+	appearance: none;
 }
 
 .consent-manager-button:hover,
 .consent-manager-button:focus {
 	text-decoration: none;
-	background: #f8fafc;
+	background: var(--consent-manager-color-button-surface-hover);
+	color: var(--consent-manager-color-text);
 }
 
 .consent-manager-button:focus-visible,
@@ -79,13 +118,14 @@
 }
 
 .consent-manager-button-primary {
-	background: #111827;
-	color: #ffffff;
+	background: var(--consent-manager-color-button-primary);
+	color: var(--consent-manager-color-button-surface);
 }
 
 .consent-manager-button-primary:hover,
 .consent-manager-button-primary:focus {
-	background: #1f2937;
+	background: var(--consent-manager-color-button-primary-hover);
+	color: var(--consent-manager-color-button-surface);
 }
 
 .consent-manager-modal {
@@ -99,7 +139,6 @@
 }
 
 .consent-manager-modal-panel {
-	background: #ffffff;
 	border-radius: 16px;
 	box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
 	overflow: auto;
@@ -110,7 +149,7 @@
 }
 
 .consent-manager-category {
-	border-bottom: 1px solid #e2e8f0;
+	border-bottom: 1px solid var(--consent-manager-color-border-subtle);
 	padding: 1rem 0;
 }
 
@@ -126,18 +165,23 @@
 }
 
 .consent-manager-category-title {
+	font-family: Arial, Helvetica, sans-serif;
 	font-size: 1rem;
+	font-weight: bold;
+	text-transform: uppercase;
 	border-bottom: none;
+	color: #115098;
 	margin: 0;
+	padding-bottom: 2px;
 }
 
 .consent-manager-category-description {
-	color: #475569;
+	color: var(--consent-manager-color-text-muted);
 	margin: 0.25rem 0 0;
 }
 
 .consent-manager-category-services {
-	color: #475569;
+	color: var(--consent-manager-color-text-muted);
 	margin: 0.75rem 0 0 1.25rem;
 }
 
@@ -153,8 +197,7 @@
 }
 
 .consent-manager-noscript {
-	background: #ffffff;
-	border: 1px solid rgba(18, 41, 64, 0.16);
+	border: 1px solid var(--consent-manager-color-border);
 	border-radius: 12px;
 	box-shadow: 0 10px 30px rgba(17, 24, 39, 0.12);
 	position: fixed;
