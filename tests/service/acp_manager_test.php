@@ -224,7 +224,7 @@ class acp_manager_test extends \phpbb_database_test_case
 
 	public function test_stream_logs_csv_batch_pagination_retrieves_all_rows()
 	{
-		$log_manager = $this->create_log_manager(1, 'session');
+		$log_manager = $this->create_log_manager(10, 'session');
 
 		for ($i = 0; $i < 5; $i++)
 		{
