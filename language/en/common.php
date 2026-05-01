@@ -21,7 +21,7 @@ if (empty($lang) || !is_array($lang))
 $lang = array_merge($lang, [
 	'CONSENTMANAGER_ACCEPT_ALL'					=> 'Accept all',
 	'CONSENTMANAGER_REJECT_ALL'					=> 'Reject all',
-	'CONSENTMANAGER_CUSTOMIZE'					=> 'Customize settings',
+	'CONSENTMANAGER_CUSTOMIZE'					=> 'Customise settings',
 	'CONSENTMANAGER_SAVE_PREFERENCES'			=> 'Save choices',
 	'CONSENTMANAGER_SETTINGS_TITLE'				=> 'Privacy settings',
 	'CONSENTMANAGER_ALWAYS_ACTIVE'				=> 'Always active',
@@ -35,5 +35,5 @@ $lang = array_merge($lang, [
 	'CONSENTMANAGER_CATEGORY_ANALYTICS'			=> 'Analytics',
 	'CONSENTMANAGER_CATEGORY_ANALYTICS_EXPLAIN'	=> 'Helps us understand how the forum is used so we can measure performance and improve the experience.',
 	'CONSENTMANAGER_CATEGORY_MARKETING'			=> 'Marketing',
-	'CONSENTMANAGER_CATEGORY_MARKETING_EXPLAIN'	=> 'Used for advertising, personalization, and marketing measurement.',
+	'CONSENTMANAGER_CATEGORY_MARKETING_EXPLAIN'	=> 'Used for advertising, personalisation, and marketing measurement.',
 ]);
