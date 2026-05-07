@@ -34,9 +34,9 @@ $lang = array_merge($lang, [
 	'CONSENTMANAGER_CATEGORY_NECESSARY_EXPLAIN'	=> 'Required for forum security, authentication, and core phpBB functionality.',
 	'CONSENTMANAGER_CATEGORY_ANALYTICS'			=> 'Analytics',
 	'CONSENTMANAGER_CATEGORY_ANALYTICS_EXPLAIN'	=> 'Helps us understand how the forum is used so we can measure performance and improve the experience.',
-	'CONSENTMANAGER_CATEGORY_MEDIA'				=> 'Embedded media',
-	'CONSENTMANAGER_CATEGORY_MEDIA_EXPLAIN'		=> 'Controls whether external videos, players, and other embedded media are allowed to load.',
 	'CONSENTMANAGER_CATEGORY_MARKETING'			=> 'Marketing',
 	'CONSENTMANAGER_CATEGORY_MARKETING_EXPLAIN'	=> 'Used for advertising, personalisation, and marketing measurement.',
+	'CONSENTMANAGER_CATEGORY_MEDIA'				=> 'Embedded media',
+	'CONSENTMANAGER_CATEGORY_MEDIA_EXPLAIN'		=> 'Controls whether external videos, players, and other embedded media are allowed to load.',
 	'CONSENTMANAGER_MEDIA_PLACEHOLDER'			=> 'Embedded media is blocked until you allow media in the Privacy Settings.',
 ]);

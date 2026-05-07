@@ -169,8 +169,8 @@ class frontend_test extends \phpbb_functional_test_case
     		SET config_value = '1'
     		WHERE " . $this->db->sql_in_set('config_name', array(
 				'consentmanager_analytics_enabled',
-				'consentmanager_media_enabled',
 				'consentmanager_marketing_enabled',
+				'consentmanager_media_enabled',
 				'consentmanager_consent_version',
 			))
 		);

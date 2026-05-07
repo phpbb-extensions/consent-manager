@@ -128,8 +128,8 @@ class acp_controller_test extends \phpbb_test_case
 			[
 				'submit' => 1,
 				'consentmanager_analytics_enabled' => 1,
-				'consentmanager_media_enabled' => 0,
-				'consentmanager_marketing_enabled' => 0
+				'consentmanager_marketing_enabled' => 0,
+				'consentmanager_media_enabled' => 0
 			],
 			['consentmanager_integrations' => "  invalid json  \n"]
 		);
@@ -148,8 +148,8 @@ class acp_controller_test extends \phpbb_test_case
 			[
 				'submit' => 1,
 				'consentmanager_analytics_enabled' => 0,
-				'consentmanager_media_enabled' => 1,
-				'consentmanager_marketing_enabled' => 1
+				'consentmanager_marketing_enabled' => 1,
+				'consentmanager_media_enabled' => 1
 			],
 			['consentmanager_integrations' => '[]']
 		);

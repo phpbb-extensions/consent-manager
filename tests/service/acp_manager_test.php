@@ -124,6 +124,55 @@ class acp_manager_test extends \phpbb_database_test_case
 		self::assertSame('{not json', $template_data['CONSENTMANAGER_INTEGRATIONS']);
 	}
 
+	public function test_normalize_integrations_json_returns_trimmed_json_string()
+	{
+		$submitted_json = "\n" . $this->get_pretty_integrations_json() . "\n";
+		$trimmed_json = trim($submitted_json);
+		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
+		$consent_manager->expects(self::once())
+			->method('normalize_integrations')
+			->with($trimmed_json, self::anything());
+
+		$manager = $this->create_manager(1, 'session', null, null, $consent_manager);
+		$errors = [];
+
+		self::assertSame($trimmed_json, $this->invoke_method($manager, 'normalize_integrations_json', [$submitted_json, &$errors]));
+		self::assertSame([], $errors);
+	}
+
+	public function test_normalize_integrations_json_returns_empty_string_for_blank_input()
+	{
+		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
+		$consent_manager->expects(self::never())
+			->method('normalize_integrations');
+
+		$manager = $this->create_manager(1, 'session', null, null, $consent_manager);
+		$errors = [];
+
+		self::assertSame('', $this->invoke_method($manager, 'normalize_integrations_json', [" \n\t ", &$errors]));
+		self::assertSame([], $errors);
+	}
+
+	public function test_normalize_integrations_json_reports_encoding_failure_for_array_input()
+	{
+		$integrations = [[
+			'id' => 'board.analytics',
+			'category' => 'analytics',
+			'label' => "\xB1\x31",
+			'src' => 'https://cdn.example.com/analytics.js',
+		]];
+		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
+		$consent_manager->expects(self::once())
+			->method('normalize_integrations')
+			->with($integrations, self::anything());
+
+		$manager = $this->create_manager(1, 'session', null, null, $consent_manager);
+		$errors = [];
+
+		self::assertSame('', $this->invoke_method($manager, 'normalize_integrations_json', [$integrations, &$errors]));
+		self::assertSame([$this->language->lang('ACP_CONSENTMANAGER_INVALID_INTEGRATIONS')], $errors);
+	}
+
 	public function test_save_settings_updates_flags_and_integrations()
 	{
 		$config_text = $this->createMock('\phpbb\config\db_text');
@@ -145,8 +194,8 @@ class acp_manager_test extends \phpbb_database_test_case
 
 		self::assertTrue($manager->save_settings([
 			'analytics_enabled' => 0,
-			'media_enabled' => 1,
 			'marketing_enabled' => 1,
+			'media_enabled' => 1,
 			'integrations' => $this->get_pretty_integrations_json(),
 		], $errors));
 		self::assertSame([], $errors);
@@ -177,8 +226,8 @@ class acp_manager_test extends \phpbb_database_test_case
 
 		self::assertTrue($manager->save_settings([
 			'analytics_enabled' => 1,
-			'media_enabled' => 0,
 			'marketing_enabled' => 1,
+			'media_enabled' => 0,
 			'integrations' => '',
 		]));
 	}
@@ -204,8 +253,8 @@ class acp_manager_test extends \phpbb_database_test_case
 
 		self::assertTrue($manager->save_settings([
 			'analytics_enabled' => 0,
-			'media_enabled' => 1,
 			'marketing_enabled' => 0,
+			'media_enabled' => 1,
 			'integrations' => '',
 		]));
 	}
@@ -241,8 +290,8 @@ class acp_manager_test extends \phpbb_database_test_case
 
 		self::assertTrue($manager->save_settings([
 			'analytics_enabled' => 1,
-			'media_enabled' => 1,
 			'marketing_enabled' => 1,
+			'media_enabled' => 1,
 			'integrations' => $integrations,
 		], $errors));
 		self::assertSame([], $errors);
@@ -270,8 +319,8 @@ class acp_manager_test extends \phpbb_database_test_case
 
 		self::assertFalse($manager->save_settings([
 			'analytics_enabled' => 1,
-			'media_enabled' => 1,
 			'marketing_enabled' => 1,
+			'media_enabled' => 1,
 			'integrations' => $json,
 		], $errors));
 		self::assertSame([$this->language->lang('ACP_CONSENTMANAGER_INVALID_INTEGRATIONS')], $errors);
@@ -308,8 +357,8 @@ class acp_manager_test extends \phpbb_database_test_case
 
 		self::assertFalse($manager->save_settings([
 			'analytics_enabled' => 1,
-			'media_enabled' => 1,
 			'marketing_enabled' => 1,
+			'media_enabled' => 1,
 			'integrations' => $integrations,
 		], $errors));
 		self::assertSame($expected_errors, $errors);
@@ -545,8 +594,8 @@ class acp_manager_test extends \phpbb_database_test_case
 		$config = new \phpbb\config\config(array_merge(array(
 			'rand_seed' => 'random-seed',
 			'consentmanager_analytics_enabled' => 1,
-			'consentmanager_media_enabled' => 1,
 			'consentmanager_marketing_enabled' => 1,
+			'consentmanager_media_enabled' => 1,
 			'consentmanager_consent_version' => 1,
 		), $config_values));
 		$db = $this->new_dbal();
@@ -640,6 +689,14 @@ JSON;
 			$key = array_shift($message_spec);
 			return call_user_func_array([$this->language, 'lang'], array_merge([$key], $message_spec));
 		}, $message_specs);
+	}
+
+	protected function invoke_method($object, $method_name, array $arguments = [])
+	{
+		$method = new \ReflectionMethod($object, $method_name);
+		$method->setAccessible(true);
+
+		return $method->invokeArgs($object, $arguments);
 	}
 
 	protected function create_log_manager($user_id, $session_id)

@@ -14,12 +14,12 @@ function createPayload(overrides) {
 		cookieName: 'phpbb_consent_state',
 		logEndpoint: '/app.php/consent/log',
 		logHash: 'test-hash',
-		mediaPlaceholderLabel: 'Embedded media is blocked until you allow media consent.',
+		mediaPlaceholderLabel: 'Embedded media is blocked until you allow media in the Privacy Settings.',
 		categories: [
 			{ id: 'necessary', enabled: true, required: true },
 			{ id: 'analytics', enabled: true, required: false },
-			{ id: 'marketing', enabled: true, required: false }
-			{ id: 'media', enabled: true, required: false },
+			{ id: 'marketing', enabled: true, required: false },
+			{ id: 'media', enabled: true, required: false }
 		],
 		requiredCategories: ['necessary'],
 		enabledCategories: ['necessary', 'analytics', 'marketing', 'media'],
@@ -41,8 +41,8 @@ function createMarkup(extraMarkup) {
 					<div id="consent-manager-modal" hidden>
 						<div class="consent-manager-modal-panel" tabindex="-1">
 							<input type="checkbox" data-consent-toggle="analytics">
-							<input type="checkbox" data-consent-toggle="media">
 							<input type="checkbox" data-consent-toggle="marketing">
+							<input type="checkbox" data-consent-toggle="media">
 							<button type="button" data-consent-action="accept-all">Accept all</button>
 							<button type="button" data-consent-action="reject-all">Reject all</button>
 							<button type="button" data-consent-action="open-settings">Open settings</button>
@@ -198,7 +198,7 @@ test('accept-all persists consent, logs the decision, and updates the UI state',
 	click(window, '[data-consent-action="accept-all"]');
 
 	expect(window.consentManager.getState()).toEqual({
-		categories: ['necessary', 'analytics', 'media', 'marketing'],
+		categories: ['necessary', 'analytics', 'marketing', 'media'],
 		timestamp: expect.any(String),
 		version: payload.version
 	});
@@ -212,7 +212,7 @@ test('accept-all persists consent, logs the decision, and updates the UI state',
 	expect(JSON.parse(requests[0].body)).toEqual({
 		hash: payload.logHash,
 		version: payload.version,
-		categories: ['necessary', 'analytics', 'media', 'marketing']
+		categories: ['necessary', 'analytics', 'marketing', 'media']
 	});
 });
 
@@ -285,7 +285,7 @@ test('activates deferred media embeds after media consent is granted', () => {
 	expect(container.getAttribute('data-consent-processed')).toBe('1');
 	expect(placeholder.hidden).toBe(true);
 	expect(content.hidden).toBe(false);
-	expect(placeholder.querySelector('.consent-manager-media-placeholder-copy').textContent).toBe('Embedded media is blocked until you allow media consent.');
+	expect(placeholder.querySelector('.consent-manager-media-placeholder-copy').textContent).toBe('Embedded media is blocked until you allow media in the Privacy Settings.');
 	expect(frame.getAttribute('src')).toBe('https://media.example.com/embed/123');
 	expect(frame.hasAttribute('data-consent-src')).toBe(false);
 	expect(frame.getAttribute('onload')).toBe('window.mediaLoaded = true;');
@@ -316,7 +316,7 @@ test('saving newly granted media consent activates blocked embeds immediately', 
 
 	expect(placeholder.hidden).toBe(false);
 	expect(content.hidden).toBe(true);
-	expect(placeholder.querySelector('.consent-manager-media-placeholder-copy').textContent).toBe('Embedded media is blocked until you allow media consent.');
+	expect(placeholder.querySelector('.consent-manager-media-placeholder-copy').textContent).toBe('Embedded media is blocked until you allow media in the Privacy Settings.');
 	expect(frame.hasAttribute('src')).toBe(false);
 
 	mediaCheckbox.checked = true;
