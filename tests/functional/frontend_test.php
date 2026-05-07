@@ -24,6 +24,8 @@ class frontend_test extends \phpbb_functional_test_case
 	{
 		parent::setUp();
 
+		$this->add_lang_ext('phpbb/consentmanager', 'common');
+
 		$this->reset_consent_manager_state();
 	}
 
@@ -37,7 +39,7 @@ class frontend_test extends \phpbb_functional_test_case
 		$this->assertStringContainsString('Privacy settings', $crawler->filter('#consent-manager-link')->text());
 		$this->assertSame(1, $payload['version']);
 		$this->assertSame('phpbb_consent_manager', $payload['storageKey']);
-		$this->assertSame('Embedded media is blocked until you allow media consent.', $payload['mediaPlaceholderLabel']);
+		$this->assertSame($this->lang('CONSENTMANAGER_MEDIA_PLACEHOLDER'), $payload['mediaPlaceholderLabel']);
 		$this->assertSame(array('necessary'), $payload['requiredCategories']);
 		$this->assertContains('analytics', $payload['optionalCategories']);
 		$this->assertContains('media', $payload['optionalCategories']);

@@ -78,8 +78,8 @@ class acp_controller
 			$errors = [];
 			$saved = $this->acp_manager->save_settings([
 				'analytics_enabled' => $this->request->variable('consentmanager_analytics_enabled', 0),
-				'media_enabled' => $this->request->variable('consentmanager_media_enabled', 0),
 				'marketing_enabled' => $this->request->variable('consentmanager_marketing_enabled', 0),
+				'media_enabled' => $this->request->variable('consentmanager_media_enabled', 0),
 				'integrations' => trim($this->request->raw_variable('consentmanager_integrations', '')),
 			], $errors);
 

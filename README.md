@@ -11,14 +11,12 @@ It adds a consent banner, settings modal, and category-based controls, allowing 
 
 The extension also provides an easy integration point for other phpBB extensions, enabling them to make their non-essential scripts compliant.
 
-Embedded media rendered through phpBB's s9e formatter (including Media Embed and iframe-based custom BBCodes) can also be deferred behind the optional Embedded media category. Extensions and templates outside s9e can use Consent Manager's deferred-media markup contract.
-
 Out of the box, Consent Manager supports these categories:
 
 - Necessary (always on)
 - Analytics (optional)
-- Embedded media (optional)
 - Marketing (optional)
+- Embedded media (optional)
 
 It also includes ACP settings for enabling categories, simple admin-managed integrations, detailed consent logging for audit and compliance purposes, and consent version resets to prompt users to review their choices when policies or integrations change.
 

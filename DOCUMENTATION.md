@@ -59,8 +59,8 @@ Consent Manager has four categories:
 |-------------|-----------------------------------------------|----------------|
 | `necessary` | Technically required functionality            | Always allowed |
 | `analytics` | Metrics, analytics, usage tracking            | Optional       |
-| `media`     | Embedded videos and other external media      | Optional       |
 | `marketing` | Advertising, remarketing, cross-site tracking | Optional       |
+| `media`     | Embedded videos and other external media      | Optional       |
 
 If you have scripts that are necessary for the board to work, you may register them with Consent Manager as `necessary`.
 However, because the necessary scripts are always loaded, registering them is completely optional.
@@ -117,7 +117,7 @@ $accepted = $consent_manager->register(string $id, array $definition);
 ### Registration rules
 
 - Registration IDs and script IDs may only use letters, numbers, `.`, `_`, `:`, and `-`, and must start with a letter or number.
-- Supported categories are `necessary`, `analytics`, `media`, and `marketing`.
+- Supported categories are `necessary`, `analytics`, `marketing`, and `media`.
 - Each `scripts` definition must use **one** of these execution sources: `src`, `asset`, or `inline`.
 - `src` accepts `http`, `https`, or relative URLs. URLs such as `//example.com/...` are not allowed.
 - `asset` must be a local phpBB asset path such as `@vendor_example/js/file.js`.
@@ -209,8 +209,8 @@ Consent Manager assigns these template flags on board pages:
 
 - `S_CONSENTMANAGER_ENABLED`
 - `S_CONSENTMANAGER_ANALYTICS_ENABLED`
-- `S_CONSENTMANAGER_MEDIA_ENABLED`
 - `S_CONSENTMANAGER_MARKETING_ENABLED`
+- `S_CONSENTMANAGER_MEDIA_ENABLED`
 
 Use the category flags when you need a fallback for boards where:
 
@@ -219,26 +219,7 @@ Use the category flags when you need a fallback for boards where:
 
 ## Embedded media patterns
 
-Consent Manager supports embedded media in two ways:
-
-1. **Automatic s9e iframe handling** for content rendered through phpBB's s9e text formatter
-2. **A manual deferred-media markup contract** for anything rendered outside s9e
-
-### Automatic s9e iframe handling
-
-When the `media` category is enabled, Consent Manager rewrites **s9e-rendered iframe output** into blocked placeholders until the visitor grants media consent.
-
-That includes:
-
-- Media Embed site templates
-- custom BBCodes rendered through s9e that output `<iframe>` markup
-- other s9e tag templates that render iframe-based embeds
-
-This happens on the server side during phpBB's text-formatter configuration, so the browser does not receive a live iframe `src` before consent.
-
-### Manual deferred-media markup contract
-
-For extensions or templates that render external media **outside** the s9e formatter, use this Consent Manager markup pattern:
+For extensions or templates that render external media **outside** the phpBB's BBCode engine, use this Consent Manager markup pattern:
 
 ```html
 <span class="consent-manager-media-embed"
@@ -271,7 +252,7 @@ How it works:
 Use this pattern for:
 
 - extension template files that print iframes directly
-- third-party widgets not rendered through s9e
+- third-party widgets not rendered through bbcode
 - custom board markup where you want a first-class media-consent UX
 
 ## Script-loading patterns
@@ -352,8 +333,8 @@ Add `{% if S_CONSENTMANAGER_MARKETING_ENABLED %} type="text/plain" data-consent-
 Use the correct `data-consent-category` value and template flag for your category:
 
 - Analytics: `"analytics"` and `S_CONSENTMANAGER_ANALYTICS_ENABLED`
-- Embedded media: `"media"` and `S_CONSENTMANAGER_MEDIA_ENABLED`
 - Marketing: `"marketing"` and `S_CONSENTMANAGER_MARKETING_ENABLED`
+- Embedded media: `"media"` and `S_CONSENTMANAGER_MEDIA_ENABLED`
 
 What this does:
 

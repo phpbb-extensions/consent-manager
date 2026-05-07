@@ -14,17 +14,16 @@ function createPayload(overrides) {
 		cookieName: 'phpbb_consent_state',
 		logEndpoint: '/app.php/consent/log',
 		logHash: 'test-hash',
-		deferredSelector: 'script[type="text/plain"][data-consent-category]',
 		mediaPlaceholderLabel: 'Embedded media is blocked until you allow media consent.',
 		categories: [
 			{ id: 'necessary', enabled: true, required: true },
 			{ id: 'analytics', enabled: true, required: false },
-			{ id: 'media', enabled: true, required: false },
 			{ id: 'marketing', enabled: true, required: false }
+			{ id: 'media', enabled: true, required: false },
 		],
 		requiredCategories: ['necessary'],
-		enabledCategories: ['necessary', 'analytics', 'media', 'marketing'],
-		optionalCategories: ['analytics', 'media', 'marketing'],
+		enabledCategories: ['necessary', 'analytics', 'marketing', 'media'],
+		optionalCategories: ['analytics', 'marketing', 'media'],
 		scripts: []
 	}, overrides || {});
 }

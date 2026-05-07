@@ -34,6 +34,28 @@ class media_manager_test extends \phpbb_test_case
 		self::assertSame($template, $configurator->tags['CUSTOM']->template);
 	}
 
+	public function test_configure_iframe_embeds_skips_non_iframe_templates()
+	{
+		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
+		$consent_manager->expects(self::once())
+			->method('is_category_enabled')
+			->with('media')
+			->willReturn(true);
+
+		$manager = new \phpbb\consentmanager\service\media_manager($consent_manager);
+
+		$configurator = new \s9e\TextFormatter\Configurator();
+		$tag = new \s9e\TextFormatter\Configurator\Items\Tag([
+			'template' => '<div class="custom-embed"><a href="https://video.example.com/watch/123">watch</a></div>',
+		]);
+		$configurator->tags->add('CUSTOM_LINK', $tag);
+		$template = $configurator->tags['CUSTOM_LINK']->template;
+
+		$manager->configure_iframe_embeds($configurator);
+
+		self::assertSame($template, $configurator->tags['CUSTOM_LINK']->template);
+	}
+
 	public function test_configure_iframe_embeds_rewrites_xsl_generated_iframe_attributes()
 	{
 		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
@@ -122,6 +144,30 @@ class media_manager_test extends \phpbb_test_case
 		self::assertStringNotContainsString('$L_CONSENTMANAGER_MEDIA_PLACEHOLDER', $template);
 		self::assertStringNotContainsString('data-consent-open-settings="1"', $template);
 		self::assertStringContainsString('<iframe src="https://video.example.com/embed/123"', $template);
+	}
+
+	public function test_configure_iframe_embeds_produces_consistent_results_for_identical_templates()
+	{
+		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
+		$consent_manager->expects(self::once())
+			->method('is_category_enabled')
+			->with('media')
+			->willReturn(true);
+
+		$manager = new \phpbb\consentmanager\service\media_manager($consent_manager);
+		$configurator = new \s9e\TextFormatter\Configurator();
+		$template = '<div class="custom-embed"><iframe src="https://video.example.com/embed/123"></iframe></div>';
+
+		$configurator->tags->add('CUSTOM_ONE', new \s9e\TextFormatter\Configurator\Items\Tag([
+			'template' => $template,
+		]));
+		$configurator->tags->add('CUSTOM_TWO', new \s9e\TextFormatter\Configurator\Items\Tag([
+			'template' => $template,
+		]));
+
+		$manager->configure_iframe_embeds($configurator);
+
+		self::assertEquals((string) $configurator->tags['CUSTOM_ONE']->template, (string) $configurator->tags['CUSTOM_TWO']->template);
 	}
 
 	public function test_configure_iframe_renderer_sets_media_allowed_parameter()

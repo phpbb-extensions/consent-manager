@@ -80,8 +80,8 @@ class consent_manager_test extends \phpbb_test_case
 		self::assertTrue($manager->is_supported_category('media'));
 		self::assertFalse($manager->is_supported_category('foobar'));
 		self::assertTrue($manager->is_category_enabled('analytics'));
-		self::assertTrue($manager->is_category_enabled('media'));
 		self::assertFalse($manager->is_category_enabled('marketing'));
+		self::assertTrue($manager->is_category_enabled('media'));
 		self::assertTrue($manager->has_optional_categories());
 
 		$categories = $manager->get_categories();
@@ -269,7 +269,7 @@ class consent_manager_test extends \phpbb_test_case
 		self::assertSame(array('necessary'), $payload['requiredCategories']);
 		self::assertSame(array('necessary', 'analytics', 'media'), $payload['enabledCategories']);
 		self::assertSame(array('analytics', 'media'), $payload['optionalCategories']);
-		self::assertSame('Embedded media is blocked until you allow media consent.', $payload['mediaPlaceholderLabel']);
+		self::assertSame($this->language->lang('CONSENTMANAGER_MEDIA_PLACEHOLDER'), $payload['mediaPlaceholderLabel']);
 		self::assertSame(array(
 			array(
 				'id' => 'necessary',
@@ -282,14 +282,14 @@ class consent_manager_test extends \phpbb_test_case
 				'enabled' => true,
 			),
 			array(
-				'id' => 'media',
-				'required' => false,
-				'enabled' => true,
-			),
-			array(
 				'id' => 'marketing',
 				'required' => false,
 				'enabled' => false,
+			),
+			array(
+				'id' => 'media',
+				'required' => false,
+				'enabled' => true,
 			),
 		), $payload['categories']);
 		self::assertSame('/app.php/consent/log', $payload['logEndpoint']);
@@ -311,7 +311,7 @@ class consent_manager_test extends \phpbb_test_case
 		self::assertFalse($data['S_COOKIE_NOTICE']);
 		self::assertSame('/app.php/consent/log?x=<test>', $payload['logEndpoint']);
 		self::assertSame('abc123', $payload['logHash']);
-		self::assertSame('Embedded media is blocked until you allow media consent.', $payload['mediaPlaceholderLabel']);
+		self::assertSame($this->language->lang('CONSENTMANAGER_MEDIA_PLACEHOLDER'), $payload['mediaPlaceholderLabel']);
 		self::assertArrayNotHasKey('label', $payload['categories'][0]);
 		self::assertArrayNotHasKey('description', $payload['categories'][0]);
 		self::assertArrayNotHasKey('banner', $payload);

@@ -22,6 +22,9 @@ class media_manager
 	/** @var consent_manager_interface */
 	protected $consent_manager;
 
+	/** @var array<string, string> */
+	protected $template_cache = [];
+
 	/**
 	 * Constructor.
 	 *
@@ -48,13 +51,15 @@ class media_manager
 
 		foreach ($configurator->tags as $tag)
 		{
-			if (empty($tag->template))
+			$template_source = (string) $tag->template;
+
+			if ($template_source === '' || stripos($template_source, 'iframe') === false)
 			{
 				continue;
 			}
 
-			$template = $this->build_iframe_placeholder_template($tag->template);
-			if ($template === $tag->template)
+			$template = $this->build_iframe_placeholder_template($template_source);
+			if ($template === $template_source)
 			{
 				continue;
 			}
@@ -89,102 +94,166 @@ class media_manager
 	 */
 	protected function build_iframe_placeholder_template($template)
 	{
-		$dom = TemplateLoader::load($template);
-		$xpath = new \DOMXPath($dom);
-		$xpath->registerNamespace('xsl', self::XSL_NAMESPACE);
-
-		$iframes = $xpath->query('//*[local-name() = "iframe" and namespace-uri() != "' . self::XSL_NAMESPACE . '"]');
-		if (!$iframes || !$iframes->length)
+		if (isset($this->template_cache[$template]))
 		{
-			return $template;
+			return $this->template_cache[$template];
 		}
 
-		$original_template = $this->save_template($dom, true);
+		$dom = TemplateLoader::load($template);
+		$iframes = $this->get_iframe_nodes($dom);
+		if (!$iframes)
+		{
+			return $this->template_cache[$template] = $template;
+		}
+
+		$allowed_template = $template;
+		if (strpos($template, 'data-s9e-') !== false)
+		{
+			$allowed_dom = clone $dom;
+			$this->strip_internal_s9e_attributes($allowed_dom);
+			$allowed_template = TemplateLoader::save($allowed_dom);
+		}
+
+		$media_roots = [];
 
 		foreach ($iframes as $iframe)
 		{
-			if ($iframe->hasAttribute('src'))
-			{
-				$iframe->setAttribute('data-consent-src', $iframe->getAttribute('src'));
-				$iframe->removeAttribute('src');
-			}
+			$this->rewrite_iframe_node($iframe);
 
-			if ($iframe->hasAttribute('onload'))
+			$media_root = $this->get_media_root($iframe);
+			if ($media_root !== null)
 			{
-				$iframe->setAttribute('data-consent-onload', $iframe->getAttribute('onload'));
-				$iframe->removeAttribute('onload');
+				$media_roots[spl_object_id($media_root)] = $media_root;
 			}
-
-			foreach ($xpath->query('./xsl:attribute[@name = "src" or @name = "onload"]', $iframe) as $dynamic_attribute)
-			{
-				$dynamic_attribute->setAttribute('name', 'data-consent-' . $dynamic_attribute->getAttribute('name'));
-			}
-
-			$iframe->setAttribute('data-consent-media-frame', '1');
 		}
 
-		$media_roots = $xpath->query(
-			'//*[namespace-uri() != "' . self::XSL_NAMESPACE . '"]'
-			. '[not(ancestor::*[namespace-uri() != "' . self::XSL_NAMESPACE . '"])]'
-			. '[self::iframe or descendant::*[local-name() = "iframe" and namespace-uri() != "' . self::XSL_NAMESPACE . '"]]'
-		);
-		if (!$media_roots || !$media_roots->length)
+		if (!$media_roots)
 		{
-			return $template;
+			return $this->template_cache[$template] = $template;
 		}
 
-		$nodes = [];
 		foreach ($media_roots as $media_root)
 		{
-			$nodes[] = $media_root;
+			$this->wrap_media_root($dom, $media_root);
 		}
 
-		foreach ($nodes as $media_root)
-		{
-			$container = $dom->createElement('span');
-			$container->setAttribute('class', 'consent-manager-media-embed');
-			$container->setAttribute('data-consent-media-container', '1');
-			$container->setAttribute('data-consent-category', self::MEDIA_CATEGORY);
+		$this->strip_internal_s9e_attributes($dom);
+		$blocked_template = TemplateLoader::save($dom);
 
-			$placeholder = $dom->createDocumentFragment();
-			$placeholder->appendXML($this->get_media_placeholder_markup());
-
-			$this->append_class($media_root, 'consent-manager-media-content');
-			$media_root->setAttribute('data-consent-media-content', '1');
-			$media_root->setAttribute('hidden', 'hidden');
-
-			$parent = $media_root->parentNode;
-			$parent->replaceChild($container, $media_root);
-			$container->appendChild($placeholder);
-			$container->appendChild($media_root);
-		}
-
-		$blocked_template = $this->save_template($dom, true);
-
-		return '<xsl:choose>'
-			. '<xsl:when test="$' . self::MEDIA_ALLOWED_PARAMETER . '">' . $original_template . '</xsl:when>'
+		return $this->template_cache[$template] = '<xsl:choose>'
+			. '<xsl:when test="$' . self::MEDIA_ALLOWED_PARAMETER . '">' . $allowed_template . '</xsl:when>'
 			. '<xsl:otherwise>' . $blocked_template . '</xsl:otherwise>'
 			. '</xsl:choose>';
 	}
 
 	/**
-	 * Save a template DOM, optionally stripping unsupported internal s9e attributes first.
+	 * Return the non-XSL iframe nodes present in a template DOM.
 	 *
 	 * @param \DOMDocument $dom Template DOM
-	 * @param bool         $strip_internal_attributes Whether to strip s9e internal attributes
 	 *
-	 * @return string
+	 * @return \DOMElement[]
 	 */
-	protected function save_template(\DOMDocument $dom, $strip_internal_attributes = false)
+	protected function get_iframe_nodes(\DOMDocument $dom)
 	{
-		$template_dom = $strip_internal_attributes ? clone $dom : $dom;
+		$iframes = [];
 
-		if ($strip_internal_attributes)
+		foreach ($dom->getElementsByTagName('iframe') as $iframe)
 		{
-			$this->strip_internal_s9e_attributes($template_dom);
+			if ($iframe instanceof \DOMElement && $iframe->namespaceURI !== self::XSL_NAMESPACE)
+			{
+				$iframes[] = $iframe;
+			}
 		}
 
-		return TemplateLoader::save($template_dom);
+		return $iframes;
+	}
+
+	/**
+	 * Rewrite a single iframe node so its live attributes are deferred until consent exists.
+	 *
+	 * @param \DOMElement $iframe Iframe element
+	 *
+	 * @return void
+	 */
+	protected function rewrite_iframe_node(\DOMElement $iframe)
+	{
+		if ($iframe->hasAttribute('src'))
+		{
+			$iframe->setAttribute('data-consent-src', $iframe->getAttribute('src'));
+			$iframe->removeAttribute('src');
+		}
+
+		if ($iframe->hasAttribute('onload'))
+		{
+			$iframe->setAttribute('data-consent-onload', $iframe->getAttribute('onload'));
+			$iframe->removeAttribute('onload');
+		}
+
+		foreach ($iframe->childNodes as $child_node)
+		{
+			if (!$child_node instanceof \DOMElement
+				|| $child_node->namespaceURI !== self::XSL_NAMESPACE
+				|| $child_node->localName !== 'attribute'
+			)
+			{
+				continue;
+			}
+
+			$name = $child_node->getAttribute('name');
+			if ($name === 'src' || $name === 'onload')
+			{
+				$child_node->setAttribute('name', 'data-consent-' . $name);
+			}
+		}
+
+		$iframe->setAttribute('data-consent-media-frame', '1');
+	}
+
+	/**
+	 * Return the topmost non-XSL ancestor for a consent-managed iframe subtree.
+	 *
+	 * @param \DOMElement $iframe Iframe element
+	 *
+	 * @return \DOMElement|null
+	 */
+	protected function get_media_root(\DOMElement $iframe)
+	{
+		$media_root = $iframe;
+
+		while ($media_root->parentNode instanceof \DOMElement && $media_root->parentNode->namespaceURI !== self::XSL_NAMESPACE)
+		{
+			$media_root = $media_root->parentNode;
+		}
+
+		return $media_root;
+	}
+
+	/**
+	 * Wrap a media subtree in placeholder markup for blocked-consent rendering.
+	 *
+	 * @param \DOMDocument $dom        Template DOM
+	 * @param \DOMElement  $media_root Top-level media subtree
+	 *
+	 * @return void
+	 */
+	protected function wrap_media_root(\DOMDocument $dom, \DOMElement $media_root)
+	{
+		$container = $dom->createElement('span');
+		$container->setAttribute('class', 'consent-manager-media-embed');
+		$container->setAttribute('data-consent-media-container', '1');
+		$container->setAttribute('data-consent-category', self::MEDIA_CATEGORY);
+
+		$placeholder = $dom->createDocumentFragment();
+		$placeholder->appendXML($this->get_media_placeholder_markup());
+
+		$this->append_class($media_root, 'consent-manager-media-content');
+		$media_root->setAttribute('data-consent-media-content', '1');
+		$media_root->setAttribute('hidden', 'hidden');
+
+		$parent = $media_root->parentNode;
+		$parent->replaceChild($container, $media_root);
+		$container->appendChild($placeholder);
+		$container->appendChild($media_root);
 	}
 
 	/**
@@ -196,11 +265,43 @@ class media_manager
 	 */
 	protected function strip_internal_s9e_attributes(\DOMDocument $dom)
 	{
-		$xpath = new \DOMXPath($dom);
+		$elements = [];
 
-		foreach ($xpath->query('//@*[starts-with(name(), "data-s9e-")]') as $attribute)
+		foreach ($dom->getElementsByTagName('*') as $element)
 		{
-			$attribute->ownerElement->removeAttributeNode($attribute);
+			$elements[] = $element;
+		}
+
+		foreach ($elements as $element)
+		{
+			if ($element->namespaceURI === self::XSL_NAMESPACE
+				&& $element->localName === 'attribute'
+				&& strpos($element->getAttribute('name'), 'data-s9e-') === 0
+			)
+			{
+				$element->parentNode->removeChild($element);
+				continue;
+			}
+
+			if (!$element->hasAttributes())
+			{
+				continue;
+			}
+
+			$attribute_names = [];
+
+			foreach ($element->attributes as $attribute)
+			{
+				if (strpos($attribute->name, 'data-s9e-') === 0)
+				{
+					$attribute_names[] = $attribute->name;
+				}
+			}
+
+			foreach ($attribute_names as $attribute_name)
+			{
+				$element->removeAttribute($attribute_name);
+			}
 		}
 	}
 

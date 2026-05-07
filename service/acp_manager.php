@@ -82,8 +82,8 @@ class acp_manager
 	{
 		return [
 			'S_CONSENTMANAGER_ANALYTICS'	=> (bool) $this->config['consentmanager_analytics_enabled'],
-			'S_CONSENTMANAGER_MEDIA'		=> (bool) $this->config['consentmanager_media_enabled'],
 			'S_CONSENTMANAGER_MARKETING'	=> (bool) $this->config['consentmanager_marketing_enabled'],
+			'S_CONSENTMANAGER_MEDIA'		=> (bool) $this->config['consentmanager_media_enabled'],
 			'CONSENTMANAGER_INTEGRATIONS'	=> $this->get_integrations_json(),
 			'CONSENTMANAGER_VERSION'		=> (int) $this->config['consentmanager_consent_version'],
 		];
@@ -114,8 +114,8 @@ class acp_manager
 		$media_setting_changed = (int) $this->config['consentmanager_media_enabled'] !== $media_enabled;
 
 		$this->config->set('consentmanager_analytics_enabled', !empty($settings['analytics_enabled']) ? 1 : 0);
-		$this->config->set('consentmanager_media_enabled', $media_enabled);
 		$this->config->set('consentmanager_marketing_enabled', !empty($settings['marketing_enabled']) ? 1 : 0);
+		$this->config->set('consentmanager_media_enabled', $media_enabled);
 		$this->config_text->set('consentmanager_integrations', $stored_integrations);
 
 		if ($media_setting_changed)

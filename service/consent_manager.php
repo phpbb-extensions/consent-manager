@@ -168,8 +168,8 @@ class consent_manager implements consent_manager_interface
 		$vars = [
 			'S_CONSENTMANAGER_ENABLED'				=> $has_optional_categories,
 			'S_CONSENTMANAGER_ANALYTICS_ENABLED'	=> !empty($categories['analytics']['enabled']),
-			'S_CONSENTMANAGER_MEDIA_ENABLED'		=> !empty($categories['media']['enabled']),
 			'S_CONSENTMANAGER_MARKETING_ENABLED'	=> !empty($categories['marketing']['enabled']),
+			'S_CONSENTMANAGER_MEDIA_ENABLED'		=> !empty($categories['media']['enabled']),
 			'CONSENTMANAGER_PAYLOAD'				=> $has_optional_categories ? json_encode($payload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) : '',
 		];
 
@@ -274,6 +274,7 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function build_frontend_payload($log_url, $log_hash)
 	{
+		$this->language->add_lang('common', 'phpbb/consentmanager');
 		$this->collect_registrations();
 
 		$categories = $this->get_categories();
@@ -295,7 +296,6 @@ class consent_manager implements consent_manager_interface
 			'storageKey' => $this->get_storage_key(),
 			'cookieName' => $this->get_cookie_name(),
 			'version' => $this->get_version(),
-			'deferredSelector' => 'script[type="text/plain"][data-consent-category]',
 			'mediaPlaceholderLabel' => $this->language->lang('CONSENTMANAGER_MEDIA_PLACEHOLDER'),
 			'requiredCategories' => $this->get_required_category_ids($categories),
 			'enabledCategories' => $this->get_enabled_category_ids($categories),
@@ -329,19 +329,19 @@ class consent_manager implements consent_manager_interface
 				'required' => false,
 				'enabled' => (bool) $this->config['consentmanager_analytics_enabled'],
 			],
-			'media' => [
-				'id' => 'media',
-				'label' => $this->language->lang('CONSENTMANAGER_CATEGORY_MEDIA'),
-				'description' => $this->language->lang('CONSENTMANAGER_CATEGORY_MEDIA_EXPLAIN'),
-				'required' => false,
-				'enabled' => (bool) $this->config['consentmanager_media_enabled'],
-			],
 			'marketing' => [
 				'id' => 'marketing',
 				'label' => $this->language->lang('CONSENTMANAGER_CATEGORY_MARKETING'),
 				'description' => $this->language->lang('CONSENTMANAGER_CATEGORY_MARKETING_EXPLAIN'),
 				'required' => false,
 				'enabled' => (bool) $this->config['consentmanager_marketing_enabled'],
+			],
+			'media' => [
+				'id' => 'media',
+				'label' => $this->language->lang('CONSENTMANAGER_CATEGORY_MEDIA'),
+				'description' => $this->language->lang('CONSENTMANAGER_CATEGORY_MEDIA_EXPLAIN'),
+				'required' => false,
+				'enabled' => (bool) $this->config['consentmanager_media_enabled'],
 			],
 		];
 	}
@@ -600,7 +600,7 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function is_supported_category($category)
 	{
-		return in_array($category, ['necessary', 'analytics', 'media', 'marketing'], true);
+		return in_array($category, ['necessary', 'analytics', 'marketing', 'media'], true);
 	}
 
 	/**

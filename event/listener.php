@@ -10,14 +10,26 @@
 
 namespace phpbb\consentmanager\event;
 
-use phpbb\consentmanager\service\frontend_manager;
+use phpbb\consentmanager\service\consent_manager_interface;
 use phpbb\consentmanager\service\media_manager;
+use phpbb\controller\helper;
+use phpbb\language\language;
+use phpbb\template\template;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
 class listener implements EventSubscriberInterface
 {
-	/** @var frontend_manager */
-	protected $frontend_manager;
+	/** @var helper */
+	protected $helper;
+
+	/** @var language */
+	protected $language;
+
+	/** @var consent_manager_interface */
+	protected $consent_manager;
+
+	/** @var template */
+	protected $template;
 
 	/** @var media_manager */
 	protected $media_manager;
@@ -25,12 +37,18 @@ class listener implements EventSubscriberInterface
 	/**
 	 * Constructor.
 	 *
-	 * @param frontend_manager $frontend_manager Frontend manager
-	 * @param media_manager    $media_manager Media manager
+	 * @param helper                    $helper Controller helper
+	 * @param language                  $language Language service
+	 * @param consent_manager_interface $consent_manager Consent manager service
+	 * @param template                  $template Template service
+	 * @param media_manager             $media_manager Media manager
 	 */
-	public function __construct(frontend_manager $frontend_manager, media_manager $media_manager)
+	public function __construct(helper $helper, language $language, consent_manager_interface $consent_manager, template $template, media_manager $media_manager)
 	{
-		$this->frontend_manager = $frontend_manager;
+		$this->helper = $helper;
+		$this->language = $language;
+		$this->consent_manager = $consent_manager;
+		$this->template = $template;
 		$this->media_manager = $media_manager;
 	}
 
@@ -58,7 +76,12 @@ class listener implements EventSubscriberInterface
 	 */
 	public function load_language_on_setup($event)
 	{
-		$event['lang_set_ext'] = $this->frontend_manager->get_setup_language_extensions($event['lang_set_ext']);
+		$lang_set_ext = $event['lang_set_ext'];
+		$lang_set_ext[] = [
+			'ext_name' => 'phpbb/consentmanager',
+			'lang_set' => 'common',
+		];
+		$event['lang_set_ext'] = $lang_set_ext;
 	}
 
 	/**
@@ -92,6 +115,35 @@ class listener implements EventSubscriberInterface
 	 */
 	public function inject_frontend()
 	{
-		$this->frontend_manager->inject_frontend();
+		if ($this->is_acp_or_installer() || !$this->consent_manager->has_optional_categories())
+		{
+			return;
+		}
+
+		$this->language->add_lang('common', 'phpbb/consentmanager');
+		$this->template->assign_vars($this->consent_manager->get_frontend_template_data(
+			$this->helper->route('phpbb_consentmanager_log_controller'),
+			generate_link_hash('phpbb.consentmanager.log')
+		));
+
+		foreach ($this->consent_manager->get_frontend_category_data() as $category)
+		{
+			$this->template->assign_block_vars('CONSENTMANAGER_CATEGORIES', $category);
+
+			foreach ($category['services'] as $service)
+			{
+				$this->template->assign_block_vars('CONSENTMANAGER_CATEGORIES.CONSENTMANAGER_SERVICES', $service);
+			}
+		}
+	}
+
+	/**
+	 * Determine whether the current request is running in the ACP or installer.
+	 *
+	 * @return bool
+	 */
+	protected function is_acp_or_installer()
+	{
+		return defined('ADMIN_START') || defined('IN_INSTALL');
 	}
 }

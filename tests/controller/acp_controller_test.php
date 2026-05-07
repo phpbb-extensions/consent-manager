@@ -104,8 +104,8 @@ class acp_controller_test extends \phpbb_test_case
 			->willReturnCallback(function (array $settings, array &$errors) {
 				self::assertSame([
 					'analytics_enabled' => 1,
-					'media_enabled' => 0,
 					'marketing_enabled' => 0,
+					'media_enabled' => 0,
 					'integrations' => 'invalid json',
 				], $settings);
 				$errors = ['Invalid integrations'];

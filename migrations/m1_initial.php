@@ -57,7 +57,6 @@ class m1_initial extends \phpbb\db\migration\migration
 	{
 		return [
 			['config.add', ['consentmanager_analytics_enabled', 1]],
-			['config.add', ['consentmanager_media_enabled', 1]],
 			['config.add', ['consentmanager_marketing_enabled', 1]],
 			['config.add', ['consentmanager_consent_version', 1]],
 			['config_text.add', ['consentmanager_integrations', '']],
@@ -73,7 +72,6 @@ class m1_initial extends \phpbb\db\migration\migration
 	{
 		return [
 			['config.remove', ['consentmanager_analytics_enabled']],
-			['config.remove', ['consentmanager_media_enabled']],
 			['config.remove', ['consentmanager_marketing_enabled']],
 			['config.remove', ['consentmanager_consent_version']],
 			['config_text.remove', ['consentmanager_integrations']],

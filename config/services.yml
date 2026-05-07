@@ -35,14 +35,6 @@ services:
             - '@user'
             - '%tables.phpbb.consentmanager.consent_logs%'
 
-    phpbb.consentmanager.frontend_manager:
-        class: phpbb\consentmanager\service\frontend_manager
-        arguments:
-            - '@controller.helper'
-            - '@language'
-            - '@phpbb.consentmanager.service'
-            - '@template'
-
     phpbb.consentmanager.media_manager:
         class: phpbb\consentmanager\service\media_manager
         arguments:
@@ -51,7 +43,10 @@ services:
     phpbb.consentmanager.listener:
         class: phpbb\consentmanager\event\listener
         arguments:
-            - '@phpbb.consentmanager.frontend_manager'
+            - '@controller.helper'
+            - '@language'
+            - '@phpbb.consentmanager.service'
+            - '@template'
             - '@phpbb.consentmanager.media_manager'
         tags:
             - { name: event.listener }

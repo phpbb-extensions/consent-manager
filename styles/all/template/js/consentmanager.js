@@ -16,6 +16,7 @@
 	let keydownBound = false;
 	let lastFocusedElement = null;
 	const categoriesById = {};
+	const deferredSelector = 'script[type="text/plain"][data-consent-category]';
 	const deferredEmbedSelector = '[data-consent-media-container][data-consent-category]';
 	let requiredCategories = [];
 	let enabledCategories = [];
@@ -573,7 +574,7 @@
 
 	function processDeferredNodes(scope)
 	{
-		const nodes = collectMatchingNodes(scope, payload.deferredSelector);
+		const nodes = collectMatchingNodes(scope, deferredSelector);
 
 		for (let index = 0; index < nodes.length; index++)
 		{
