@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { JSDOM } = require('jsdom');
+const { JSDOM, VirtualConsole } = require('jsdom');
 
 const scriptSource = fs.readFileSync(
 	path.join(__dirname, '..', '..', 'styles', 'all', 'template', 'js', 'consentmanager.js'),
@@ -86,9 +86,15 @@ function click(window, selector) {
 function setupConsentManager(options) {
 	const settings = options || {};
 	const payload = createPayload(settings.payload);
+	const jsdomErrors = [];
+	const virtualConsole = new VirtualConsole();
+	virtualConsole.on('jsdomError', (error) => {
+		jsdomErrors.push(error);
+	});
 	const dom = new JSDOM(createMarkup(settings.extraMarkup), {
 		runScripts: 'dangerously',
-		url: 'https://example.com/'
+		url: 'https://example.com/',
+		virtualConsole
 	});
 	const { window } = dom;
 	const requests = [];
@@ -143,7 +149,8 @@ function setupConsentManager(options) {
 		window,
 		document: window.document,
 		payload,
-		requests
+		requests,
+		jsdomErrors
 	};
 }
 
@@ -384,4 +391,22 @@ test('saving consent activates deferred embeds when the media content element is
 	expect(frame.hidden).toBe(false);
 	expect(frame.getAttribute('src')).toBe('https://media.example.com/embed/456');
 	expect(frame.hasAttribute('data-consent-src')).toBe(false);
+});
+
+test('revoking only media consent reloads the page', () => {
+	const { window, document, jsdomErrors } = setupConsentManager({
+		localState: createState(['necessary', 'media'], '2026-04-28T00:00:00.000Z')
+	});
+	const analyticsCheckbox = document.querySelector('[data-consent-toggle="analytics"]');
+	const marketingCheckbox = document.querySelector('[data-consent-toggle="marketing"]');
+	const mediaCheckbox = document.querySelector('[data-consent-toggle="media"]');
+
+	analyticsCheckbox.checked = false;
+	marketingCheckbox.checked = false;
+	mediaCheckbox.checked = false;
+
+	click(window, '[data-consent-action="save-settings"]');
+
+	expect(jsdomErrors).toHaveLength(1);
+	expect(jsdomErrors[0].message).toContain('Not implemented: navigation');
 });

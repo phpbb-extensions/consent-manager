@@ -353,6 +353,13 @@
 
 		for (let index = 0; index < removedCategories.length; index++)
 		{
+			if (removedCategories[index] === 'media')
+			{
+				// Media embeds may be rendered live by the server when consent was already granted,
+				// so revoking media consent must reload even if no client-side activation was tracked.
+				return true;
+			}
+
 			if (executedCategories[removedCategories[index]])
 			{
 				return true;
