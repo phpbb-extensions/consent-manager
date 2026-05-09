@@ -228,6 +228,67 @@ class consent_manager_test extends \phpbb_test_case
 		self::assertSame(array(), $service['scripts'][2]['attributes']);
 	}
 
+	public function test_register_preserves_explicit_script_ids_in_script_lists()
+	{
+		$manager = $this->get_manager();
+
+		self::assertTrue($manager->register('vendor.bundle', array(
+			'category' => 'analytics',
+			'scripts' => array(
+				array(
+					'id' => 'vendor.bundle.loader',
+					'src' => 'https://cdn.example.com/a.js',
+				),
+				array(
+					'inline' => 'window.testConsent = true;',
+				),
+			),
+		)));
+
+		$service = $this->get_service('vendor.bundle', $manager);
+
+		self::assertSame('vendor.bundle.loader', $service['scripts'][0]['id']);
+		self::assertSame('vendor.bundle.2', $service['scripts'][1]['id']);
+	}
+
+	public function test_register_skips_duplicate_script_ids()
+	{
+		$manager = $this->get_manager();
+
+		self::assertTrue($manager->register('vendor.first', array(
+			'category' => 'analytics',
+			'scripts' => array(
+				array(
+					'id' => 'vendor.shared.loader',
+					'src' => 'https://cdn.example.com/first.js',
+				),
+			),
+		)));
+
+		self::assertTrue($manager->register('vendor.second', array(
+			'category' => 'analytics',
+			'scripts' => array(
+				array(
+					'id' => 'vendor.second.loader',
+					'src' => 'https://cdn.example.com/second.js',
+				),
+				array(
+					'id' => 'vendor.shared.loader',
+					'src' => 'https://cdn.example.com/duplicate.js',
+				),
+				array(
+					'id' => 'vendor.second.loader',
+					'inline' => 'window.duplicate = true;',
+				),
+			),
+		)));
+
+		$service = $this->get_service('vendor.second', $manager);
+
+		self::assertCount(1, $service['scripts']);
+		self::assertSame('vendor.second.loader', $service['scripts'][0]['id']);
+	}
+
 	public function test_register_resolves_local_assets()
 	{
 		$manager = $this->get_manager();
@@ -251,7 +312,7 @@ class consent_manager_test extends \phpbb_test_case
 				'category' => 'analytics',
 				'label' => 'Vendor bundle',
 				'scripts' => array(
-					array('src' => 'https://cdn.example.com/analytics.js', 'category' => 'analytics'),
+					array('id' => 'vendor.bundle.loader', 'src' => 'https://cdn.example.com/analytics.js', 'category' => 'analytics'),
 					array('src' => 'https://cdn.example.com/marketing.js', 'category' => 'marketing'),
 				),
 			));
@@ -294,7 +355,7 @@ class consent_manager_test extends \phpbb_test_case
 		self::assertSame('/app.php/consent/log', $payload['logEndpoint']);
 		self::assertSame('deadbeef', $payload['logHash']);
 		self::assertArrayNotHasKey('services', $payload);
-		self::assertSame(array('vendor.bundle.1', 'board.analytics'), array_column($payload['scripts'], 'id'));
+		self::assertSame(array('vendor.bundle.loader', 'board.analytics'), array_column($payload['scripts'], 'id'));
 	}
 
 	public function test_get_frontend_template_data_returns_json_payload()

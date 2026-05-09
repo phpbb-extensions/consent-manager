@@ -121,6 +121,7 @@ class consent_manager implements consent_manager_interface
 			'description' => isset($definition['description']) ? trim((string) $definition['description']) : '',
 			'scripts' => [],
 		];
+		$registered_script_ids = $this->get_registered_script_ids($id);
 
 		if (isset($definition['scripts']) && is_array($definition['scripts']))
 		{
@@ -132,16 +133,17 @@ class consent_manager implements consent_manager_interface
 				}
 
 				$script = $this->normalize_script($id, $category, $script_definition, $script_index, true);
-				if (!empty($script))
+				if (!empty($script) && !isset($registered_script_ids[$script['id']]))
 				{
 					$registration['scripts'][] = $script;
+					$registered_script_ids[$script['id']] = true;
 				}
 			}
 		}
 		else
 		{
 			$script = $this->normalize_script($id, $category, $definition);
-			if (!empty($script))
+			if (!empty($script) && !isset($registered_script_ids[$script['id']]))
 			{
 				$registration['scripts'][] = $script;
 			}
@@ -761,11 +763,11 @@ class consent_manager implements consent_manager_interface
 	 * @param string $fallback_category Fallback category identifier
 	 * @param array  $definition Raw script definition
 	 * @param int    $script_index Script position within the registration
-	 * @param bool   $force_unique_id Whether to force a unique script id
+	 * @param bool   $generate_default_id Whether to generate a default script id from the registration id
 	 *
 	 * @return array
 	 */
-	protected function normalize_script($registration_id, $fallback_category, array $definition, $script_index = 0, $force_unique_id = false)
+	protected function normalize_script($registration_id, $fallback_category, array $definition, $script_index = 0, $generate_default_id = false)
 	{
 		$category = isset($definition['category']) && trim((string) $definition['category']) !== '' ? trim((string) $definition['category']) : $fallback_category;
 		if (!$this->is_supported_category($category))
@@ -774,7 +776,11 @@ class consent_manager implements consent_manager_interface
 		}
 
 		$script_id = isset($definition['id']) && trim((string) $definition['id']) !== '' ? trim((string) $definition['id']) : $registration_id;
-		if ($force_unique_id || ($script_id === $registration_id && $script_index > 0))
+		if (!isset($definition['id']) || trim((string) $definition['id']) === '')
+		{
+			$script_id = ($generate_default_id || $script_index > 0) ? $registration_id . '.' . ($script_index + 1) : $registration_id;
+		}
+		else if ($script_id === $registration_id && $script_index > 0)
 		{
 			$script_id = $registration_id . '.' . ($script_index + 1);
 		}
@@ -972,5 +978,32 @@ class consent_manager implements consent_manager_interface
 	protected function is_valid_identifier($identifier)
 	{
 		return $identifier !== '' && preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]*$/', $identifier);
+	}
+
+	/**
+	 * Return all currently registered script ids, excluding one registration if requested.
+	 *
+	 * @param string|null $exclude_registration_id Registration id to ignore
+	 *
+	 * @return array<string, bool>
+	 */
+	protected function get_registered_script_ids($exclude_registration_id = null)
+	{
+		$script_ids = [];
+
+		foreach ($this->registrations as $registration_id => $registration)
+		{
+			if ($exclude_registration_id !== null && $registration_id === $exclude_registration_id)
+			{
+				continue;
+			}
+
+			foreach ($registration['scripts'] as $script)
+			{
+				$script_ids[$script['id']] = true;
+			}
+		}
+
+		return $script_ids;
 	}
 }
