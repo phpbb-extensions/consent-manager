@@ -13,13 +13,8 @@ namespace phpbb\consentmanager\tests\functional;
 /**
  * @group functional
  */
-class acp_test extends \phpbb_functional_test_case
+class acp_test extends functional_base
 {
-	protected static function setup_extensions()
-	{
-		return array('phpbb/consentmanager');
-	}
-
 	public function test_acp_page_renders_consent_manager_settings()
 	{
 		$this->login();

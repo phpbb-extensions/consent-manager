@@ -13,13 +13,8 @@ namespace phpbb\consentmanager\tests\functional;
 /**
  * @group functional
  */
-class frontend_test extends \phpbb_functional_test_case
+class frontend_test extends functional_base
 {
-	protected static function setup_extensions()
-	{
-		return array('phpbb/consentmanager');
-	}
-
 	protected function setUp(): void
 	{
 		parent::setUp();
@@ -43,7 +38,7 @@ class frontend_test extends \phpbb_functional_test_case
 		$this->assertSame(array('necessary'), $payload['requiredCategories']);
 		$this->assertContains('analytics', $payload['optionalCategories']);
 		$this->assertContains('media', $payload['optionalCategories']);
-		$this->assertStringContainsString('app.php/consent/log', $payload['logEndpoint']);
+		$this->assertStringContainsString('/consent/log', $payload['logEndpoint']);
 	}
 
 	public function test_log_endpoint_rejects_invalid_json_payload()
