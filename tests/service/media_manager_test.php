@@ -174,7 +174,7 @@ class media_manager_test extends \phpbb_test_case
 
 		$renderer = $this->getMockBuilder('\phpbb\textformatter\s9e\renderer')
 			->disableOriginalConstructor()
-			->setMethods(['get_renderer'])
+			->onlyMethods(['get_renderer'])
 			->getMock();
 		$renderer->expects(self::once())
 			->method('get_renderer')
@@ -193,7 +193,7 @@ class media_manager_test extends \phpbb_test_case
 
 		$renderer = $this->getMockBuilder('\phpbb\textformatter\s9e\renderer')
 			->disableOriginalConstructor()
-			->setMethods(['get_renderer'])
+			->onlyMethods(['get_renderer'])
 			->getMock();
 		$renderer->expects(self::once())
 			->method('get_renderer')
@@ -227,7 +227,7 @@ class media_manager_test extends \phpbb_test_case
 		}
 	}
 
-	public function build_iframe_placeholder_template_data()
+	public static function build_iframe_placeholder_template_data()
 	{
 		return [
 			'no runtime iframes' => [

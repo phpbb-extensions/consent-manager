@@ -94,7 +94,7 @@ class log_controller_test extends \phpbb_test_case
 		), json_decode($response->getContent(), true));
 	}
 
-	public function invalid_submission_data()
+	public static function invalid_submission_data()
 	{
 		return array(
 			'invalid hash' => array('invalid_hash', 403),

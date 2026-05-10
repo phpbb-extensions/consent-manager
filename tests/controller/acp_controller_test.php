@@ -321,7 +321,7 @@ class acp_controller_test extends \phpbb_test_case
 	{
 		$request = $this->getMockBuilder('\phpbb\request\request')
 			->disableOriginalConstructor()
-			->setMethods(['is_set_post', 'variable', 'raw_variable'])
+			->onlyMethods(['is_set_post', 'variable', 'raw_variable'])
 			->getMock();
 
 		$request->method('is_set_post')

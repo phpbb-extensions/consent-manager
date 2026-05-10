@@ -85,7 +85,7 @@ class listener_test extends \phpbb_test_case
 		]));
 	}
 
-	public function inject_frontend_assigns_template_payload_data()
+	public static function inject_frontend_assigns_template_payload_data()
 	{
 		return [
 			'front end' => [true],
@@ -145,24 +145,35 @@ class listener_test extends \phpbb_test_case
 			]);
 		$template->expects($invoke ? self::exactly(2) : self::never())
 			->method('assign_block_vars')
-			->withConsecutive(
-				['CONSENTMANAGER_CATEGORIES', [
-					'ID'          => 'necessary',
-					'LABEL'       => 'Necessary',
-					'DESCRIPTION' => 'Required cookies.',
-					'REQUIRED'    => true,
-					'services'    => [
-						[
-							'LABEL' => 'Cookie baker',
-							'DESCRIPTION' => 'Delicious cookies',
+			->willReturnCallback(function() use ($invoke) {
+				static $call = 0;
+				$args = func_get_args();
+				if ($call === 0)
+				{
+					self::assertSame('CONSENTMANAGER_CATEGORIES', $args[0]);
+					self::assertSame([
+						'ID'          => 'necessary',
+						'LABEL'       => 'Necessary',
+						'DESCRIPTION' => 'Required cookies.',
+						'REQUIRED'    => true,
+						'services'    => [
+							[
+								'LABEL' => 'Cookie baker',
+								'DESCRIPTION' => 'Delicious cookies',
+							],
 						],
-					],
-				]],
-				['CONSENTMANAGER_CATEGORIES.CONSENTMANAGER_SERVICES', [
-					'LABEL' => 'Cookie baker',
-					'DESCRIPTION' => 'Delicious cookies',
-				]]
-			);
+					], $args[1]);
+				}
+				else
+				{
+					self::assertSame('CONSENTMANAGER_CATEGORIES.CONSENTMANAGER_SERVICES', $args[0]);
+					self::assertSame([
+						'LABEL' => 'Cookie baker',
+						'DESCRIPTION' => 'Delicious cookies',
+					], $args[1]);
+				}
+				$call++;
+			});
 
 		$listener = new class($helper, $this->language, $consent_manager, $template, $this->createMock('\phpbb\consentmanager\service\media_manager'), $invoke) extends \phpbb\consentmanager\event\listener {
 			/** @var bool */

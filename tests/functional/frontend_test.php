@@ -54,7 +54,7 @@ class frontend_test extends functional_base
 			'{invalid'
 		);
 
-		$this->assertSame(400, self::$client->getResponse()->getStatus());
+		$this->assertSame(400, self::$client->getResponse()->getStatusCode());
 		$this->assertSame(array(
 			'success' => false,
 			'error' => 'invalid_payload',
@@ -79,7 +79,7 @@ class frontend_test extends functional_base
 		);
 
 		$response = json_decode(self::$client->getResponse()->getContent(), true);
-		$this->assertSame(200, self::$client->getResponse()->getStatus());
+		$this->assertSame(200, self::$client->getResponse()->getStatusCode());
 		$this->assertSame(array('necessary', 'analytics'), $response['categories']);
 		$this->assertSame($payload['version'], $response['version']);
 
@@ -113,7 +113,7 @@ class frontend_test extends functional_base
 		);
 
 		$response = json_decode(self::$client->getResponse()->getContent(), true);
-		$this->assertSame(200, self::$client->getResponse()->getStatus());
+		$this->assertSame(200, self::$client->getResponse()->getStatusCode());
 		$this->assertSame(array('necessary', 'analytics'), $response['categories']);
 		$this->assertSame($payload['version'], $response['version']);
 
@@ -146,7 +146,7 @@ class frontend_test extends functional_base
 		);
 
 		$response = json_decode(self::$client->getResponse()->getContent(), true);
-		$this->assertSame(409, self::$client->getResponse()->getStatus());
+		$this->assertSame(409, self::$client->getResponse()->getStatusCode());
 		$this->assertSame('version_mismatch', $response['error']);
 	}
 

@@ -95,7 +95,7 @@ class acp_module_test extends \phpbb_test_case
 		], $this->module_manager->get_module_infos('acp', 'consentmanager_module'));
 	}
 
-	public function module_auth_test_data()
+	public static function module_auth_test_data()
 	{
 		return [
 			// module_auth, expected result

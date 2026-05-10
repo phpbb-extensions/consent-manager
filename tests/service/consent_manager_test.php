@@ -51,7 +51,6 @@ class consent_manager_test extends \phpbb_test_case
 		$symfony_request = new \phpbb\symfony_request($request);
 		$this->path_helper = new \phpbb\path_helper(
 			$symfony_request,
-			$this->filesystem,
 			$request,
 			$phpbb_root_path,
 			$phpEx
@@ -132,7 +131,7 @@ class consent_manager_test extends \phpbb_test_case
 
 		$cached_manager = $this->getMockBuilder('\phpbb\consentmanager\service\consent_manager')
 			->setConstructorArgs($this->get_manager_constructor_args([], $config_text, new \phpbb_mock_event_dispatcher(), null, null, $this->language, $consent_cache))
-			->setMethods(['normalize_integrations'])
+			->onlyMethods(['normalize_integrations'])
 			->getMock();
 		$cached_manager->expects(self::never())
 			->method('normalize_integrations');
@@ -153,7 +152,7 @@ class consent_manager_test extends \phpbb_test_case
 
 		$refreshed_manager = $this->getMockBuilder('\phpbb\consentmanager\service\consent_manager')
 			->setConstructorArgs($this->get_manager_constructor_args([], $config_text, new \phpbb_mock_event_dispatcher(), null, null, $this->language, $consent_cache))
-			->setMethods(['normalize_integrations'])
+			->onlyMethods(['normalize_integrations'])
 			->getMock();
 		$refreshed_manager->expects(self::once())
 			->method('normalize_integrations')
@@ -188,7 +187,7 @@ class consent_manager_test extends \phpbb_test_case
 
 		$cached_manager = $this->getMockBuilder('\phpbb\consentmanager\service\consent_manager')
 			->setConstructorArgs($this->get_manager_constructor_args(['assets_version' => 99], $config_text, new \phpbb_mock_event_dispatcher(), null, null, $this->language, $consent_cache))
-			->setMethods(['normalize_integrations'])
+			->onlyMethods(['normalize_integrations'])
 			->getMock();
 		$cached_manager->expects(self::never())
 			->method('normalize_integrations');
@@ -253,7 +252,7 @@ class consent_manager_test extends \phpbb_test_case
 		self::assertSame(array(), $manager->get_services());
 	}
 
-	public function invalid_registration_data()
+	public static function invalid_registration_data()
 	{
 		return array(
 			'invalid id' => array('bad id', array(
@@ -278,7 +277,7 @@ class consent_manager_test extends \phpbb_test_case
 		self::assertSame(array(), $this->get_service('vendor.bundle', $manager)['scripts']);
 	}
 
-	public function invalid_script_source_data()
+	public static function invalid_script_source_data()
 	{
 		return array(
 			'multiple sources' => array(array(
@@ -521,7 +520,7 @@ class consent_manager_test extends \phpbb_test_case
 	{
 		$twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
 			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
+			->onlyMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
 			->getMock();
 		$twig_environment->method('get_phpbb_root_path')
 			->willReturn($this->phpbb_root_path);
@@ -550,7 +549,7 @@ class consent_manager_test extends \phpbb_test_case
 	{
 		$first_twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
 			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
+			->onlyMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
 			->getMock();
 		$first_twig_environment->method('get_phpbb_root_path')
 			->willReturn($this->phpbb_root_path);
@@ -570,7 +569,7 @@ class consent_manager_test extends \phpbb_test_case
 
 		$second_twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
 			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
+			->onlyMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
 			->getMock();
 		$second_twig_environment->method('get_phpbb_root_path')
 			->willReturn($this->phpbb_root_path);
@@ -593,7 +592,7 @@ class consent_manager_test extends \phpbb_test_case
 	{
 		$failing_twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
 			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
+			->onlyMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
 			->getMock();
 		$failing_twig_environment->method('get_phpbb_root_path')
 			->willReturn($this->phpbb_root_path);
@@ -613,7 +612,7 @@ class consent_manager_test extends \phpbb_test_case
 
 		$working_twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
 			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
+			->onlyMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
 			->getMock();
 		$working_twig_environment->method('get_phpbb_root_path')
 			->willReturn($this->phpbb_root_path);
@@ -868,7 +867,7 @@ class consent_manager_test extends \phpbb_test_case
 		self::assertSame($this->get_language_messages($expected_error_specs), $errors);
 	}
 
-	public function normalize_integrations_edge_case_data()
+	public static function normalize_integrations_edge_case_data()
 	{
 		return array(
 			'empty string' => array(
@@ -1022,7 +1021,7 @@ class consent_manager_test extends \phpbb_test_case
 		self::assertFalse($manager->has_server_consent($category));
 	}
 
-	public function invalid_server_consent_cookie_data()
+	public static function invalid_server_consent_cookie_data()
 	{
 		return [
 			'stale version' => [
@@ -1062,7 +1061,7 @@ class consent_manager_test extends \phpbb_test_case
 	{
 		$twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
 			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'findTemplate'))
+			->onlyMethods(array('get_phpbb_root_path', 'findTemplate'))
 			->getMock();
 		$twig_environment->method('get_phpbb_root_path')
 			->willReturn($this->phpbb_root_path);
@@ -1086,7 +1085,7 @@ class consent_manager_test extends \phpbb_test_case
 	{
 		$twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
 			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'findTemplate'))
+			->onlyMethods(array('get_phpbb_root_path', 'findTemplate'))
 			->getMock();
 		$twig_environment->method('get_phpbb_root_path')
 			->willReturn($this->phpbb_root_path);
@@ -1137,7 +1136,7 @@ class consent_manager_test extends \phpbb_test_case
 		{
 			$twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
 				->disableOriginalConstructor()
-				->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
+				->onlyMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
 				->getMock();
 			$twig_environment->method('get_phpbb_root_path')
 				->willReturn($this->phpbb_root_path);

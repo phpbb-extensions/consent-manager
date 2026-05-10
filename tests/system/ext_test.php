@@ -29,7 +29,7 @@ class ext_test extends \phpbb_test_case
 		parent::setUp();
 
 		$this->container = $this->getMockBuilder('\Symfony\Component\DependencyInjection\ContainerInterface')->disableOriginalConstructor()->getMock();
-		$this->extension_finder = $this->getMockBuilder('\phpbb\finder')->disableOriginalConstructor()->getMock();
+		$this->extension_finder = $this->getMockBuilder('\phpbb\finder\finder')->disableOriginalConstructor()->getMock();
 		$this->migrator = $this->getMockBuilder('\phpbb\db\migrator')->disableOriginalConstructor()->getMock();
 	}
 
@@ -60,7 +60,7 @@ class ext_test extends \phpbb_test_case
 		$lang_loader = new \phpbb\language\language_file_loader($phpbb_root_path, $phpEx);
 		$extension_manager = $this->getMockBuilder('\phpbb\extension\manager')
 			->disableOriginalConstructor()
-			->setMethods(['get_extension_path'])
+			->onlyMethods(['get_extension_path'])
 			->getMock();
 		$extension_manager->method('get_extension_path')
 			->with('phpbb/consentmanager', true)

@@ -45,7 +45,7 @@ class acp_manager_test extends \phpbb_database_test_case
 	{
 		$log = $this->getMockBuilder('\phpbb\log\log')
 			->disableOriginalConstructor()
-			->setMethods(array('add'))
+			->onlyMethods(array('add'))
 			->getMock();
 		$log->expects(self::once())
 			->method('add')
@@ -59,7 +59,7 @@ class acp_manager_test extends \phpbb_database_test_case
 	{
 		$log = $this->getMockBuilder('\phpbb\log\log')
 			->disableOriginalConstructor()
-			->setMethods(array('add'))
+			->onlyMethods(array('add'))
 			->getMock();
 		$log->expects(self::once())
 			->method('add')
@@ -73,7 +73,7 @@ class acp_manager_test extends \phpbb_database_test_case
 	{
 		$log = $this->getMockBuilder('\phpbb\log\log')
 			->disableOriginalConstructor()
-			->setMethods(array('add'))
+			->onlyMethods(array('add'))
 			->getMock();
 		$log->expects(self::once())
 			->method('add')
@@ -338,7 +338,7 @@ class acp_manager_test extends \phpbb_database_test_case
 		self::assertSame([$this->language->lang('ACP_CONSENTMANAGER_INVALID_INTEGRATIONS')], $errors);
 	}
 
-	public function invalid_integrations_data()
+	public static function invalid_integrations_data()
 	{
 		return [
 			'malformed json' => ['{not json'],
@@ -376,7 +376,7 @@ class acp_manager_test extends \phpbb_database_test_case
 		self::assertSame($expected_errors, $errors);
 	}
 
-	public function invalid_array_integrations_data()
+	public static function invalid_array_integrations_data()
 	{
 		return [
 			'invalid entry' => [
@@ -518,10 +518,10 @@ class acp_manager_test extends \phpbb_database_test_case
 		self::assertCount(4, $row);
 
 		// anonymized_id: 64-char hex
-		self::assertRegExp('/^[0-9a-f]{64}$/', $row[0]);
+		self::assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $row[0]);
 
 		// timestamp: ISO 8601 UTC
-		self::assertRegExp('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $row[1]);
+		self::assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $row[1]);
 
 		// consent_version
 		self::assertSame('3', $row[2]);
