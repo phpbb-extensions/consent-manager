@@ -13,13 +13,8 @@ namespace phpbb\consentmanager\tests\functional;
 /**
  * @group functional
  */
-class iframe_embed_test extends \phpbb_functional_test_case
+class iframe_embed_test extends functional_base
 {
-	protected static function setup_extensions()
-	{
-		return array('phpbb/consentmanager');
-	}
-
 	public function test_custom_iframe_bbcodes_are_deferred_until_media_consent_is_granted()
 	{
 		$this->login();

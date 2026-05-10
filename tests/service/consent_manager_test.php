@@ -1208,27 +1208,30 @@ class consent_manager_test extends \phpbb_test_case
 
 	protected function get_cache_service(array &$cache_store = [])
 	{
-		$cache = $this->getMockBuilder('\phpbb\cache\service')
-			->disableOriginalConstructor()
-			->setMethods(['get', 'put', 'destroy'])
-			->getMock();
-
-		$cache->method('get')
+		$driver = $this->createMock('\phpbb\cache\driver\driver_interface');
+		$driver->method('get')
 			->willReturnCallback(function ($key) use (&$cache_store) {
 				return array_key_exists($key, $cache_store) ? $cache_store[$key] : false;
 			});
-		$cache->method('put')
+		$driver->method('put')
 			->willReturnCallback(function ($key, $value) use (&$cache_store) {
 				$cache_store[$key] = $value;
 				return true;
 			});
-		$cache->method('destroy')
+		$driver->method('destroy')
 			->willReturnCallback(function ($key) use (&$cache_store) {
 				unset($cache_store[$key]);
 				return true;
 			});
 
-		return $cache;
+		return new \phpbb\cache\service(
+			$driver,
+			new \phpbb\config\config([]),
+			$this->createMock('\phpbb\db\driver\driver_interface'),
+			new \phpbb_mock_event_dispatcher(),
+			'',
+			'php'
+		);
 	}
 
 	protected function get_service($id, \phpbb\consentmanager\service\consent_manager $manager)

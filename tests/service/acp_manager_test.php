@@ -342,7 +342,7 @@ class acp_manager_test extends \phpbb_database_test_case
 	{
 		return [
 			'malformed json' => ['{not json'],
-			'top level object' => [$this->get_non_array_integrations_json()],
+			'top level object' => ['{"id":"board.analytics"}'],
 		];
 	}
 
@@ -694,11 +694,6 @@ class acp_manager_test extends \phpbb_database_test_case
     }
 ]
 JSON;
-	}
-
-	protected function get_non_array_integrations_json()
-	{
-		return '{"id":"board.analytics"}';
 	}
 
 	protected function get_language_messages(array $message_specs)
