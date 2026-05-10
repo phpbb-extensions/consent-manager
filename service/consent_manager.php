@@ -26,6 +26,9 @@ class consent_manager implements consent_manager_interface
 	public const STORAGE_KEY = 'phpbb_consent_manager';
 	public const COOKIE_NAME = 'phpbb_consent_manager';
 
+	/** @var consent_cache */
+	protected $consent_cache;
+
 	/** @var config */
 	protected $config;
 
@@ -62,9 +65,22 @@ class consent_manager implements consent_manager_interface
 	/** @var array|null */
 	protected $server_consent_state;
 
+	/** @var array|null */
+	protected $configured_integrations;
+
+	/** @var array|null */
+	protected $services;
+
+	/** @var array|null */
+	protected $category_config;
+
+	/** @var array */
+	protected $local_asset_sources = [];
+
 	/**
 	 * Constructor.
 	 *
+	 * @param consent_cache        $consent_cache Persistent cache helper
 	 * @param config               $config Config service
 	 * @param db_text              $config_text Text configuration storage
 	 * @param language             $language Language service
@@ -74,8 +90,9 @@ class consent_manager implements consent_manager_interface
 	 * @param filesystem           $filesystem Filesystem helper
 	 * @param request_interface    $request Request service
 	 */
-	public function __construct(config $config, db_text $config_text, language $language, dispatcher_interface $dispatcher, environment $twig_environment, path_helper $path_helper, filesystem $filesystem, request_interface $request)
+	public function __construct(consent_cache $consent_cache, config $config, db_text $config_text, language $language, dispatcher_interface $dispatcher, environment $twig_environment, path_helper $path_helper, filesystem $filesystem, request_interface $request)
 	{
+		$this->consent_cache = $consent_cache;
 		$this->config = $config;
 		$this->config_text = $config_text;
 		$this->language = $language;
@@ -121,6 +138,7 @@ class consent_manager implements consent_manager_interface
 			'description' => isset($definition['description']) ? trim((string) $definition['description']) : '',
 			'scripts' => [],
 		];
+		$registered_script_ids = $this->get_registered_script_ids($id);
 
 		if (isset($definition['scripts']) && is_array($definition['scripts']))
 		{
@@ -132,20 +150,23 @@ class consent_manager implements consent_manager_interface
 				}
 
 				$script = $this->normalize_script($id, $category, $script_definition, $script_index, true);
-				if (!empty($script))
+				if (!empty($script) && !isset($registered_script_ids[$script['id']]))
 				{
 					$registration['scripts'][] = $script;
+					$registered_script_ids[$script['id']] = true;
 				}
 			}
 		}
 		else
 		{
 			$script = $this->normalize_script($id, $category, $definition);
-			if (!empty($script))
+			if (!empty($script) && !isset($registered_script_ids[$script['id']]))
 			{
 				$registration['scripts'][] = $script;
 			}
 		}
+
+		$this->services = null;
 
 		$this->registrations[$registration['id']] = $registration;
 		return true;
@@ -161,8 +182,8 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function get_frontend_template_data($log_url, $log_hash)
 	{
-		$categories = $this->get_categories();
-		$has_optional_categories = $this->has_optional_categories();
+		$categories = $this->get_category_config();
+		$has_optional_categories = !empty($this->get_optional_category_ids($categories));
 		$payload = $has_optional_categories ? $this->build_frontend_payload($log_url, $log_hash) : '';
 
 		$vars = [
@@ -274,9 +295,7 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function build_frontend_payload($log_url, $log_hash)
 	{
-		$this->collect_registrations();
-
-		$categories = $this->get_categories();
+		$categories = $this->get_category_config();
 		$services = $this->get_services();
 		$scripts = [];
 
@@ -312,36 +331,24 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function get_categories()
 	{
-		return [
-			'necessary' => [
-				'id' => 'necessary',
-				'label' => $this->language->lang('CONSENTMANAGER_CATEGORY_NECESSARY'),
-				'description' => $this->language->lang('CONSENTMANAGER_CATEGORY_NECESSARY_EXPLAIN'),
-				'required' => true,
-				'enabled' => true,
-			],
-			'analytics' => [
-				'id' => 'analytics',
-				'label' => $this->language->lang('CONSENTMANAGER_CATEGORY_ANALYTICS'),
-				'description' => $this->language->lang('CONSENTMANAGER_CATEGORY_ANALYTICS_EXPLAIN'),
-				'required' => false,
-				'enabled' => (bool) $this->config['consentmanager_analytics_enabled'],
-			],
-			'marketing' => [
-				'id' => 'marketing',
-				'label' => $this->language->lang('CONSENTMANAGER_CATEGORY_MARKETING'),
-				'description' => $this->language->lang('CONSENTMANAGER_CATEGORY_MARKETING_EXPLAIN'),
-				'required' => false,
-				'enabled' => (bool) $this->config['consentmanager_marketing_enabled'],
-			],
-			'media' => [
-				'id' => 'media',
-				'label' => $this->language->lang('CONSENTMANAGER_CATEGORY_MEDIA'),
-				'description' => $this->language->lang('CONSENTMANAGER_CATEGORY_MEDIA_EXPLAIN'),
-				'required' => false,
-				'enabled' => (bool) $this->config['consentmanager_media_enabled'],
-			],
+		$lang_keys = [
+			'necessary' => ['CONSENTMANAGER_CATEGORY_NECESSARY', 'CONSENTMANAGER_CATEGORY_NECESSARY_EXPLAIN'],
+			'analytics' => ['CONSENTMANAGER_CATEGORY_ANALYTICS', 'CONSENTMANAGER_CATEGORY_ANALYTICS_EXPLAIN'],
+			'marketing' => ['CONSENTMANAGER_CATEGORY_MARKETING', 'CONSENTMANAGER_CATEGORY_MARKETING_EXPLAIN'],
+			'media' => ['CONSENTMANAGER_CATEGORY_MEDIA', 'CONSENTMANAGER_CATEGORY_MEDIA_EXPLAIN'],
 		];
+		$categories = [];
+
+		foreach ($this->get_category_config() as $id => $category)
+		{
+			[$label_key, $description_key] = $lang_keys[$id];
+			$categories[$id] = $category + [
+				'label' => $this->language->lang($label_key),
+				'description' => $this->language->lang($description_key),
+			];
+		}
+
+		return $categories;
 	}
 
 	/**
@@ -351,6 +358,11 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function get_services()
 	{
+		if ($this->services !== null)
+		{
+			return $this->services;
+		}
+
 		$this->collect_registrations();
 
 		$services = $this->registrations;
@@ -368,7 +380,7 @@ class consent_manager implements consent_manager_interface
 			}
 		}
 
-		return $services;
+		return $this->services = $services;
 	}
 
 	/**
@@ -378,16 +390,31 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function get_configured_integrations()
 	{
+		if ($this->configured_integrations !== null)
+		{
+			return $this->configured_integrations;
+		}
+
 		$raw = $this->config_text->get('consentmanager_integrations');
 		if ($raw === '')
 		{
-			return [];
+			return $this->configured_integrations = [];
+		}
+
+		$fingerprint = $this->get_integrations_cache_fingerprint($raw);
+		$cached = $this->consent_cache->get_integrations($fingerprint);
+		if ($cached !== null)
+		{
+			return $this->configured_integrations = $cached;
 		}
 
 		$errors = [];
 		$integrations = $this->normalize_integrations($raw, $errors);
+		$this->configured_integrations = empty($errors) ? $integrations : [];
 
-		return empty($errors) ? $integrations : [];
+		$this->consent_cache->put_integrations($fingerprint, $this->configured_integrations);
+
+		return $this->configured_integrations;
 	}
 
 	/**
@@ -545,7 +572,7 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function is_category_enabled($category)
 	{
-		$categories = $this->get_categories();
+		$categories = $this->get_category_config();
 		return isset($categories[$category]) && $categories[$category]['enabled'];
 	}
 
@@ -556,7 +583,7 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function has_optional_categories()
 	{
-		return !empty($this->get_optional_category_ids($this->get_categories()));
+		return !empty($this->get_optional_category_ids($this->get_category_config()));
 	}
 
 	/**
@@ -573,7 +600,7 @@ class consent_manager implements consent_manager_interface
 			return false;
 		}
 
-		$categories = $this->get_categories();
+		$categories = $this->get_category_config();
 		if (!empty($categories[$category]['required']))
 		{
 			return true;
@@ -755,17 +782,48 @@ class consent_manager implements consent_manager_interface
 	}
 
 	/**
+	 * Return the category state/config data independent of language loading.
+	 *
+	 * @return array
+	 */
+	protected function get_category_config()
+	{
+		return $this->category_config ?? ($this->category_config = [
+			'necessary' => [
+				'id' => 'necessary',
+				'required' => true,
+				'enabled' => true,
+			],
+			'analytics' => [
+				'id' => 'analytics',
+				'required' => false,
+				'enabled' => (bool) $this->config['consentmanager_analytics_enabled'],
+			],
+			'marketing' => [
+				'id' => 'marketing',
+				'required' => false,
+				'enabled' => (bool) $this->config['consentmanager_marketing_enabled'],
+			],
+			'media' => [
+				'id' => 'media',
+				'required' => false,
+				'enabled' => (bool) $this->config['consentmanager_media_enabled'],
+			],
+		]);
+	}
+
+	/**
 	 * Normalize a script definition for frontend execution.
 	 *
 	 * @param string $registration_id Parent registration identifier
 	 * @param string $fallback_category Fallback category identifier
 	 * @param array  $definition Raw script definition
 	 * @param int    $script_index Script position within the registration
-	 * @param bool   $force_unique_id Whether to force a unique script id
+	 * @param bool   $generate_default_id Whether to generate a default script id from the registration id
 	 *
 	 * @return array
 	 */
-	protected function normalize_script($registration_id, $fallback_category, array $definition, $script_index = 0, $force_unique_id = false)
+	protected function normalize_script($registration_id, $fallback_category, array $definition, $script_index = 0, $generate_default_id = false)
 	{
 		$category = isset($definition['category']) && trim((string) $definition['category']) !== '' ? trim((string) $definition['category']) : $fallback_category;
 		if (!$this->is_supported_category($category))
@@ -774,7 +832,11 @@ class consent_manager implements consent_manager_interface
 		}
 
 		$script_id = isset($definition['id']) && trim((string) $definition['id']) !== '' ? trim((string) $definition['id']) : $registration_id;
-		if ($force_unique_id || ($script_id === $registration_id && $script_index > 0))
+		if (!isset($definition['id']) || trim((string) $definition['id']) === '')
+		{
+			$script_id = ($generate_default_id || $script_index > 0) ? $registration_id . '.' . ($script_index + 1) : $registration_id;
+		}
+		else if ($script_id === $registration_id && $script_index > 0)
 		{
 			$script_id = $registration_id . '.' . ($script_index + 1);
 		}
@@ -907,11 +969,15 @@ class consent_manager implements consent_manager_interface
 	 */
 	protected function resolve_local_asset_source($asset_path)
 	{
-		$template_asset = new asset($asset_path, $this->path_helper, $this->filesystem);
+		if (array_key_exists($asset_path, $this->local_asset_sources))
+		{
+			return $this->local_asset_sources[$asset_path];
+		}
 
+		$template_asset = new asset($asset_path, $this->path_helper, $this->filesystem);
 		if (!$this->is_valid_local_asset_path($asset_path) || !$template_asset->is_relative())
 		{
-			return '';
+			return $this->local_asset_sources[$asset_path] = '';
 		}
 
 		if (strpos($asset_path, './') !== 0)
@@ -926,7 +992,7 @@ class consent_manager implements consent_manager_interface
 				}
 				catch (LoaderError $error)
 				{
-					return '';
+					return $this->local_asset_sources[$asset_path] = '';
 				}
 			}
 		}
@@ -936,7 +1002,7 @@ class consent_manager implements consent_manager_interface
 			$template_asset->add_assets_version($this->config['assets_version']);
 		}
 
-		return html_entity_decode($template_asset->get_url(), ENT_QUOTES, 'UTF-8');
+		return $this->local_asset_sources[$asset_path] = html_entity_decode($template_asset->get_url(), ENT_QUOTES, 'UTF-8');
 	}
 
 	/**
@@ -972,5 +1038,44 @@ class consent_manager implements consent_manager_interface
 	protected function is_valid_identifier($identifier)
 	{
 		return $identifier !== '' && preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]*$/', $identifier);
+	}
+
+	/**
+	 * Build the persistent cache fingerprint used for normalized integrations.
+	 *
+	 * @param string $raw Raw integrations JSON
+	 *
+	 * @return string
+	 */
+	protected function get_integrations_cache_fingerprint($raw)
+	{
+		return hash('sha256', (string) $raw);
+	}
+
+	/**
+	 * Return all currently registered script ids, excluding one registration if requested.
+	 *
+	 * @param string|null $exclude_registration_id Registration id to ignore
+	 *
+	 * @return array<string, bool>
+	 */
+	protected function get_registered_script_ids($exclude_registration_id = null)
+	{
+		$script_ids = [];
+
+		foreach ($this->registrations as $registration_id => $registration)
+		{
+			if ($exclude_registration_id !== null && $registration_id === $exclude_registration_id)
+			{
+				continue;
+			}
+
+			foreach ($registration['scripts'] as $script)
+			{
+				$script_ids[$script['id']] = true;
+			}
+		}
+
+		return $script_ids;
 	}
 }
