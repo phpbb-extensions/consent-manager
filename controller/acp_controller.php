@@ -114,17 +114,18 @@ class acp_controller
 	public function handle_logs()
 	{
 		add_form_key('phpbb_consentmanager_export');
+		$form_data = $this->get_logs_form_data();
 
 		if ($this->request->is_set_post('download_csv'))
 		{
 			$this->validate_form_key('phpbb_consentmanager_export');
 
 			$errors = [];
-			$filters = $this->parse_export_filters($errors);
+			$filters = $this->parse_export_filters($form_data, $errors);
 
 			if (!empty($errors))
 			{
-				$this->assign_export_template_vars($errors);
+				$this->assign_export_template_vars($form_data, $errors);
 				return;
 			}
 
@@ -134,11 +135,11 @@ class acp_controller
 		else if ($this->request->is_set_post('delete_logs'))
 		{
 			$errors = [];
-			$filters = $this->parse_export_filters($errors);
+			$filters = $this->parse_export_filters($form_data, $errors);
 
 			if (!empty($errors))
 			{
-				$this->assign_export_template_vars($errors);
+				$this->assign_export_template_vars($form_data, $errors);
 				return;
 			}
 
@@ -154,34 +155,31 @@ class acp_controller
 				confirm_box(
 					false,
 					$this->language->lang('ACP_CONSENTMANAGER_DELETE_CONFIRM'),
-					build_hidden_fields([
+					build_hidden_fields(array_merge([
 						'mode'                   => 'export',
 						'delete_logs'            => 1,
-						'export_date_from'       => $this->request->variable('export_date_from', ''),
-						'export_date_to'         => $this->request->variable('export_date_to', ''),
-						'export_user_id'         => $this->request->variable('export_user_id', 0),
-						'export_consent_version' => $this->request->variable('export_consent_version', 0),
-					])
+					], $form_data))
 				);
 			}
 		}
 
-		$this->assign_export_template_vars();
+		$this->assign_export_template_vars($form_data);
 	}
 
 	/**
 	 * Parse and validate filter inputs from the export form.
 	 *
+	 * @param array $form_data Array of form field values
 	 * @param array $errors Reference — validation errors are appended here
 	 *
 	 * @return array Validated filter map (date_from, date_to, user_id, consent_version)
 	 */
-	protected function parse_export_filters(array &$errors)
+	protected function parse_export_filters(array $form_data, array &$errors)
 	{
-		$date_from_str = trim($this->request->variable('export_date_from', ''));
-		$date_to_str   = trim($this->request->variable('export_date_to', ''));
-		$user_id       = $this->request->variable('export_user_id', 0);
-		$consent_ver   = $this->request->variable('export_consent_version', 0);
+		$date_from_str = trim($form_data['export_date_from']);
+		$date_to_str   = trim($form_data['export_date_to']);
+		$user_id       = $form_data['export_user_id'];
+		$consent_ver   = $form_data['export_consent_version'];
 
 		$filters   = [];
 		$date_from = $this->acp_manager->parse_date_filter($date_from_str);
@@ -250,17 +248,14 @@ class acp_controller
 		exit;
 	}
 
-	protected function assign_export_template_vars(array $errors = [])
+	protected function get_logs_form_data()
 	{
-		$this->template->assign_vars([
-			'S_ERROR'            => !empty($errors),
-			'ERROR_MSG'          => implode('<br>', $errors),
-			'EXPORT_DATE_FROM'   => $this->request->variable('export_date_from', ''),
-			'EXPORT_DATE_TO'     => $this->request->variable('export_date_to', ''),
-			'EXPORT_USER_ID'     => $this->request->variable('export_user_id', 0),
-			'EXPORT_CONSENT_VER' => $this->request->variable('export_consent_version', 0),
-			'U_ACTION'           => $this->u_action,
-		]);
+		return [
+			'export_date_from'       => $this->request->variable('export_date_from', ''),
+			'export_date_to'         => $this->request->variable('export_date_to', ''),
+			'export_user_id'         => $this->request->variable('export_user_id', 0),
+			'export_consent_version' => $this->request->variable('export_consent_version', 0),
+		];
 	}
 
 	protected function assign_template_vars(array $errors = [])
@@ -273,6 +268,19 @@ class acp_controller
 				'U_ACTION'	=> $this->u_action,
 			]
 		));
+	}
+
+	protected function assign_export_template_vars(array $form_data, array $errors = [])
+	{
+		$this->template->assign_vars([
+			'S_ERROR'            => !empty($errors),
+			'ERROR_MSG'          => implode('<br>', $errors),
+			'EXPORT_DATE_FROM'   => $form_data['export_date_from'],
+			'EXPORT_DATE_TO'     => $form_data['export_date_to'],
+			'EXPORT_USER_ID'     => $form_data['export_user_id'],
+			'EXPORT_CONSENT_VER' => $form_data['export_consent_version'],
+			'U_ACTION'           => $this->u_action,
+		]);
 	}
 
 	protected function validate_form_key($form_key)
