@@ -107,10 +107,11 @@ class consent_manager_test extends \phpbb_test_case
 
 	public function test_get_configured_integrations_memoizes_results_per_request()
 	{
+		$config_get_args = ['consentmanager_integrations'];
 		$config_text = $this->createMock('\phpbb\config\db_text');
 		$config_text->expects(self::once())
 			->method('get')
-			->with('consentmanager_integrations')
+			->with(...$config_get_args)
 			->willReturn($this->get_submitted_integrations_json());
 
 		$manager = $this->get_manager([], '', null, $config_text);
@@ -154,9 +155,10 @@ class consent_manager_test extends \phpbb_test_case
 			->setConstructorArgs($this->get_manager_constructor_args([], $config_text, new \phpbb_mock_event_dispatcher(), null, null, $this->language, $consent_cache))
 			->onlyMethods(['normalize_integrations'])
 			->getMock();
+		$normalize_args = [$this->get_submitted_integrations_json(), self::anything()];
 		$refreshed_manager->expects(self::once())
 			->method('normalize_integrations')
-			->with($this->get_submitted_integrations_json(), self::anything())
+			->with(...$normalize_args)
 			->willReturn([[
 				'id' => 'board.analytics',
 				'label' => 'Board Analytics',
@@ -197,10 +199,11 @@ class consent_manager_test extends \phpbb_test_case
 
 	public function test_get_services_memoizes_results_after_first_collection()
 	{
+		$config_get_args = ['consentmanager_integrations'];
 		$config_text = $this->createMock('\phpbb\config\db_text');
 		$config_text->expects(self::once())
 			->method('get')
-			->with('consentmanager_integrations')
+			->with(...$config_get_args)
 			->willReturn('');
 
 		$dispatcher = $this->get_collect_registrations_dispatcher(function ($data) {
@@ -526,9 +529,10 @@ class consent_manager_test extends \phpbb_test_case
 			->willReturn($this->phpbb_root_path);
 		$twig_environment->method('getNamespaceLookUpOrder')
 			->willReturn(['__main__']);
+		$find_template_args = ['styles/prosilver/template/consentmanager.js'];
 		$twig_environment->expects(self::once())
 			->method('findTemplate')
-			->with('styles/prosilver/template/consentmanager.js')
+			->with(...$find_template_args)
 			->willReturn($this->phpbb_root_path . 'ext/phpbb/consentmanager/styles/all/template/js/consentmanager.js');
 
 		$manager = $this->get_manager([], '', null, null, $twig_environment);
@@ -555,9 +559,10 @@ class consent_manager_test extends \phpbb_test_case
 			->willReturn($this->phpbb_root_path);
 		$first_twig_environment->method('getNamespaceLookUpOrder')
 			->willReturn(['__main__']);
+		$find_template_args = ['styles/prosilver/template/consentmanager.js'];
 		$first_twig_environment->expects(self::once())
 			->method('findTemplate')
-			->with('styles/prosilver/template/consentmanager.js')
+			->with(...$find_template_args)
 			->willReturn($this->phpbb_root_path . 'ext/phpbb/consentmanager/styles/all/template/js/consentmanager.js');
 
 		$first_manager = $this->get_manager([], '', null, null, $first_twig_environment);
@@ -577,7 +582,7 @@ class consent_manager_test extends \phpbb_test_case
 			->willReturn(['__main__']);
 		$second_twig_environment->expects(self::once())
 			->method('findTemplate')
-			->with('styles/prosilver/template/consentmanager.js')
+			->with(...$find_template_args)
 			->willReturn($this->phpbb_root_path . 'ext/phpbb/consentmanager/styles/all/template/js/consentmanager.js');
 
 		$second_manager = $this->get_manager([], '', null, null, $second_twig_environment);
@@ -598,9 +603,10 @@ class consent_manager_test extends \phpbb_test_case
 			->willReturn($this->phpbb_root_path);
 		$failing_twig_environment->method('getNamespaceLookUpOrder')
 			->willReturn(['__main__']);
+		$find_template_args = ['styles/prosilver/template/missing-consentmanager.js'];
 		$failing_twig_environment->expects(self::once())
 			->method('findTemplate')
-			->with('styles/prosilver/template/missing-consentmanager.js')
+			->with(...$find_template_args)
 			->willThrowException(new \Twig\Error\LoaderError('Missing template asset'));
 
 		$failing_manager = $this->get_manager([], '', null, null, $failing_twig_environment);
@@ -620,7 +626,7 @@ class consent_manager_test extends \phpbb_test_case
 			->willReturn(['__main__']);
 		$working_twig_environment->expects(self::once())
 			->method('findTemplate')
-			->with('styles/prosilver/template/missing-consentmanager.js')
+			->with(...$find_template_args)
 			->willReturn($this->phpbb_root_path . 'ext/phpbb/consentmanager/styles/all/template/js/consentmanager.js');
 
 		$working_manager = $this->get_manager([], '', null, null, $working_twig_environment);
@@ -989,14 +995,15 @@ class consent_manager_test extends \phpbb_test_case
 
 	public function test_has_server_consent_reuses_cached_cookie_state()
 	{
+		$raw_variable_args = [
+			\phpbb\consentmanager\service\consent_manager::COOKIE_NAME,
+			'',
+			\phpbb\request\request_interface::COOKIE,
+		];
 		$request = $this->createMock('\phpbb\request\request_interface');
 		$request->expects(self::once())
 			->method('raw_variable')
-			->with(
-				\phpbb\consentmanager\service\consent_manager::COOKIE_NAME,
-				'',
-				\phpbb\request\request_interface::COOKIE
-			)
+			->with(...$raw_variable_args)
 			->willReturn(json_encode([
 				'categories' => ['analytics'],
 				'version' => 3,
@@ -1065,9 +1072,10 @@ class consent_manager_test extends \phpbb_test_case
 			->getMock();
 		$twig_environment->method('get_phpbb_root_path')
 			->willReturn($this->phpbb_root_path);
+		$find_template_args = ['styles/prosilver/template/consentmanager.js'];
 		$twig_environment->expects(self::once())
 			->method('findTemplate')
-			->with('styles/prosilver/template/consentmanager.js')
+			->with(...$find_template_args)
 			->willReturn($this->phpbb_root_path . 'ext/phpbb/consentmanager/styles/all/template/js/consentmanager.js');
 
 		$manager = $this->get_manager(array(), '', null, null, $twig_environment);
@@ -1089,9 +1097,10 @@ class consent_manager_test extends \phpbb_test_case
 			->getMock();
 		$twig_environment->method('get_phpbb_root_path')
 			->willReturn($this->phpbb_root_path);
+		$find_template_args = ['styles/prosilver/template/missing-consentmanager.js'];
 		$twig_environment->expects(self::once())
 			->method('findTemplate')
-			->with('styles/prosilver/template/missing-consentmanager.js')
+			->with(...$find_template_args)
 			->willThrowException(new \Twig\Error\LoaderError('missing template asset'));
 
 		$manager = $this->get_manager(array(), '', null, null, $twig_environment);
@@ -1244,15 +1253,16 @@ class consent_manager_test extends \phpbb_test_case
 	protected function get_collect_registrations_dispatcher(callable $callback)
 	{
 		$dispatcher = $this->createMock('phpbb\\event\\dispatcher_interface');
+		$trigger_event_args = [
+			'phpbb.consentmanager.collect_registrations',
+			$this->callback(function ($vars) {
+				return isset($vars['consent_manager'])
+					&& $vars['consent_manager'] instanceof \phpbb\consentmanager\service\consent_manager;
+			}),
+		];
 		$dispatcher->expects(self::once())
 			->method('trigger_event')
-			->with(
-				'phpbb.consentmanager.collect_registrations',
-				$this->callback(function ($vars) {
-					return isset($vars['consent_manager'])
-						&& $vars['consent_manager'] instanceof \phpbb\consentmanager\service\consent_manager;
-				})
-			)
+			->with(...$trigger_event_args)
 			->willReturnCallback(function ($event_name, $data = array()) use ($callback) {
 				return $callback($data);
 			});
