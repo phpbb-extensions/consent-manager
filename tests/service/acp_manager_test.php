@@ -94,7 +94,7 @@ class acp_manager_test extends \phpbb_database_test_case
 		$log_args = ['admin', 7, '127.0.0.1', 'LOG_CONSENTMANAGER_DELETE'];
 		$log = $this->getMockBuilder('\phpbb\log\log')
 			->disableOriginalConstructor()
-			->setMethods(array('add'))
+			->onlyMethods(array('add'))
 			->getMock();
 		$log->expects(self::once())
 			->method('add')
