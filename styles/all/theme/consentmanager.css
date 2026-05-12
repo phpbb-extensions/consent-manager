@@ -245,4 +245,8 @@
 	.consent-manager-category-header {
 		flex-direction: column;
 	}
+
+	.consent-manager-button[data-consent-action="close-settings"] {
+		min-width: 0;
+	}
 }

@@ -122,14 +122,19 @@ class acp_manager_test extends \phpbb_database_test_case
 
 	public function test_get_user_id_by_username_returns_matching_user_id()
 	{
-		$this->db->sql_query("INSERT INTO phpbb_users (user_type, group_id, username, username_clean, user_regdate, user_password, user_email, user_lang, user_style, user_rank, user_colour, user_posts, user_permissions, user_ip, user_birthday, user_lastpage, user_last_confirm_key, user_post_sortby_type, user_post_sortby_dir, user_topic_sortby_type, user_topic_sortby_dir, user_avatar, user_sig, user_sig_bbcode_uid, user_jabber, user_actkey, user_actkey_expiration, user_newpasswd, user_allow_massemail) VALUES (" . USER_NORMAL . ", 2, 'LookupUser', 'lookupuser', 0, '', 'lookup@example.com', 'en', 1, 0, '', 0, '', '', '', '', '', 't', 'a', 't', 'd', '', '', '', '', '', 0, '', 0)");
-
-		$sql = 'SELECT user_id
-			FROM phpbb_users
-			WHERE username_clean = \'lookupuser\'';
-		$result = $this->db->sql_query($sql);
-		$user_id = (int) $this->db->sql_fetchfield('user_id');
-		$this->db->sql_freeresult($result);
+		$sql = 'INSERT INTO ' . USERS_TABLE . ' ' . $this->db->sql_build_array('INSERT', [
+			'user_type'			=> USER_NORMAL,
+			'group_id'			=> 2,
+			'username'			=> 'LookupUser',
+			'username_clean'	=> 'lookupuser',
+			'user_permissions'	=> '',
+			'user_email'		=> 'lookup@example.com',
+			'user_lang'			=> 'en',
+			'user_style'		=> 1,
+			'user_sig'			=> '',
+		]);
+		$this->db->sql_query($sql);
+		$user_id = (int) $this->db->sql_last_inserted_id();
 
 		$manager = $this->create_manager(1, 'session');
 
