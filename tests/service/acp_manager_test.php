@@ -36,7 +36,7 @@ class acp_manager_test extends \phpbb_database_test_case
 
 		$db = $this->db = $this->new_dbal();
 		$this->db->sql_query('DELETE FROM phpbb_consentmanager_logs');
-		$this->db->sql_query("DELETE FROM phpbb_users WHERE user_id IN (4242, 4243)");
+		$this->db->sql_query("DELETE FROM phpbb_users WHERE username_clean = 'lookupuser'");
 	}
 
 	public function getDataSet()
@@ -122,11 +122,18 @@ class acp_manager_test extends \phpbb_database_test_case
 
 	public function test_get_user_id_by_username_returns_matching_user_id()
 	{
-		$this->db->sql_query("INSERT INTO phpbb_users (user_id, user_type, group_id, username, username_clean, user_regdate, user_password, user_email, user_lang, user_style, user_rank, user_colour, user_posts, user_permissions, user_ip, user_birthday, user_lastpage, user_last_confirm_key, user_post_sortby_type, user_post_sortby_dir, user_topic_sortby_type, user_topic_sortby_dir, user_avatar, user_sig, user_sig_bbcode_uid, user_jabber, user_actkey, user_actkey_expiration, user_newpasswd, user_allow_massemail) VALUES (4242, " . USER_NORMAL . ", 2, 'LookupUser', 'lookupuser', 0, '', 'lookup@example.com', 'en', 1, 0, '', 0, '', '', '', '', '', 't', 'a', 't', 'd', '', '', '', '', '', 0, '', 0)");
+		$this->db->sql_query("INSERT INTO phpbb_users (user_type, group_id, username, username_clean, user_regdate, user_password, user_email, user_lang, user_style, user_rank, user_colour, user_posts, user_permissions, user_ip, user_birthday, user_lastpage, user_last_confirm_key, user_post_sortby_type, user_post_sortby_dir, user_topic_sortby_type, user_topic_sortby_dir, user_avatar, user_sig, user_sig_bbcode_uid, user_jabber, user_actkey, user_actkey_expiration, user_newpasswd, user_allow_massemail) VALUES (" . USER_NORMAL . ", 2, 'LookupUser', 'lookupuser', 0, '', 'lookup@example.com', 'en', 1, 0, '', 0, '', '', '', '', '', 't', 'a', 't', 'd', '', '', '', '', '', 0, '', 0)");
+
+		$sql = 'SELECT user_id
+			FROM phpbb_users
+			WHERE username_clean = \'lookupuser\'';
+		$result = $this->db->sql_query($sql);
+		$user_id = (int) $this->db->sql_fetchfield('user_id');
+		$this->db->sql_freeresult($result);
 
 		$manager = $this->create_manager(1, 'session');
 
-		self::assertSame(4242, $manager->get_user_id_by_username('LookupUser'));
+		self::assertSame($user_id, $manager->get_user_id_by_username('LookupUser'));
 	}
 
 	public function test_get_user_id_by_username_returns_false_when_user_is_missing()
@@ -134,6 +141,7 @@ class acp_manager_test extends \phpbb_database_test_case
 		$manager = $this->create_manager(1, 'session');
 
 		self::assertFalse($manager->get_user_id_by_username('MissingUser'));
+		self::assertFalse($manager->get_user_id_by_username(''));
 	}
 
 	public function test_get_settings_template_data_pretty_prints_stored_integrations()
@@ -502,16 +510,14 @@ class acp_manager_test extends \phpbb_database_test_case
 
 	public function test_stream_logs_csv_filters_by_date_range()
 	{
-		$db   = $this->new_dbal();
 		$now  = time();
 		$past = $now - 7200; // 2 hours ago
 
-		$db->sql_query('INSERT INTO phpbb_consentmanager_logs
+		$this->db->sql_query('INSERT INTO phpbb_consentmanager_logs
 			(anonymized_id, consent_version, accepted_categories, consent_time)
 			VALUES
-			(\'' . $db->sql_escape('hash-old') . '\', 1, \'["necessary"]\', ' . $past . '),
-			(\'' . $db->sql_escape('hash-new') . '\', 1, \'["necessary","analytics"]\', ' . $now . ')');
-		$db->sql_close();
+			(\'' . $this->db->sql_escape('hash-old') . '\', 1, \'["necessary"]\', ' . $past . '),
+			(\'' . $this->db->sql_escape('hash-new') . '\', 1, \'["necessary","analytics"]\', ' . $now . ')');
 
 		$handle = fopen('php://memory', 'wb+');
 		$this->create_manager(1, 'session')->stream_logs_csv($handle, array(
@@ -596,12 +602,10 @@ class acp_manager_test extends \phpbb_database_test_case
 
 	public function test_stream_logs_csv_sanitizes_formula_injection_in_categories()
 	{
-		$db = $this->new_dbal();
 		// Insert a row whose accepted_categories begins with '=' — a formula injection attempt
-		$db->sql_query('INSERT INTO phpbb_consentmanager_logs
+		$this->db->sql_query('INSERT INTO phpbb_consentmanager_logs
 			(anonymized_id, consent_version, accepted_categories, consent_time)
 			VALUES (\'hash-x\', 1, \'["=DANGEROUS()"]\', ' . time() . ')');
-		$db->sql_close();
 
 		$handle = fopen('php://memory', 'wb+');
 		$this->create_manager(1, 'session')->stream_logs_csv($handle);
