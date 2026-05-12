@@ -33,6 +33,7 @@ class acp_manager_test extends \phpbb_database_test_case
 
 		$db = $this->new_dbal();
 		$db->sql_query('DELETE FROM phpbb_consentmanager_logs');
+		$db->sql_query("DELETE FROM phpbb_users WHERE user_id IN (4242, 4243)");
 		$db->sql_close();
 	}
 
@@ -115,6 +116,24 @@ class acp_manager_test extends \phpbb_database_test_case
 
 		self::assertSame($manager->hash_user_id(99), $manager->hash_user_id(99));
 		self::assertNotSame($manager->hash_user_id(1), $manager->hash_user_id(2));
+	}
+
+	public function test_get_user_id_by_username_returns_matching_user_id()
+	{
+		$db = $this->new_dbal();
+		$db->sql_query("INSERT INTO phpbb_users (user_id, user_type, group_id, username, username_clean, user_regdate, user_password, user_email, user_lang, user_style, user_rank, user_colour, user_posts, user_permissions, user_ip, user_birthday, user_lastpage, user_last_confirm_key, user_post_sortby_type, user_post_sortby_dir, user_topic_sortby_type, user_topic_sortby_dir, user_avatar, user_sig, user_sig_bbcode_uid, user_jabber, user_actkey, user_actkey_expiration, user_newpasswd, user_allow_massemail) VALUES (4242, " . USER_NORMAL . ", 2, 'LookupUser', 'lookupuser', 0, '', 'lookup@example.com', 'en', 1, 0, '', 0, '', '', '', '', '', 't', 'a', 't', 'd', '', '', '', '', '', 0, '', 0)");
+		$db->sql_close();
+
+		$manager = $this->create_manager(1, 'session');
+
+		self::assertSame(4242, $manager->get_user_id_by_username('LookupUser'));
+	}
+
+	public function test_get_user_id_by_username_returns_false_when_user_is_missing()
+	{
+		$manager = $this->create_manager(1, 'session');
+
+		self::assertFalse($manager->get_user_id_by_username('MissingUser'));
 	}
 
 	public function test_get_settings_template_data_pretty_prints_stored_integrations()
@@ -674,6 +693,8 @@ class acp_manager_test extends \phpbb_database_test_case
 
 	protected function create_manager($user_id, $session_id, $log = null, $config_text = null, $consent_manager = null, $consent_cache = null, $text_formatter_cache = null, array $config_values = [])
 	{
+		global $phpbb_root_path, $phpEx;
+
 		$config = new \phpbb\config\config(array_merge(array(
 			'rand_seed' => 'random-seed',
 			'consentmanager_analytics_enabled' => 1,
@@ -731,6 +752,8 @@ class acp_manager_test extends \phpbb_database_test_case
 			$consent_cache,
 			$text_formatter_cache,
 			$user,
+			$phpbb_root_path,
+			$phpEx,
 			'phpbb_consentmanager_logs'
 		);
 	}

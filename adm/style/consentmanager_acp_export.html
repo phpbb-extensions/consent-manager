@@ -27,10 +27,11 @@
 		</dl>
 		<dl>
 			<dt>
-				<label for="export_user_id">{{ lang('ACP_CONSENTMANAGER_EXPORT_USER_ID') ~ lang('COLON') }}</label>
-				<br><span>{{ lang('ACP_CONSENTMANAGER_EXPORT_USER_ID_EXPLAIN') }}</span>
+				<label for="export_username">{{ lang('USERNAME') ~ lang('COLON') }}</label>
+				<br><span>{{ lang('ACP_CONSENTMANAGER_EXPORT_USERNAME_EXPLAIN') }}</span>
 			</dt>
-			<dd><input type="number" id="export_user_id" name="export_user_id" min="0" value="{{ EXPORT_USER_ID }}"></dd>
+			<dd><input type="text" id="export_username" name="export_username" value="{{ EXPORT_USERNAME|e('html') }}" class="text narrow"></dd>
+			<dd>[ <a href="{{ U_FIND_USERNAME }}" onclick="find_username(this.href); return false;">{{ lang('FIND_USERNAME') }}</a> ]</dd>
 		</dl>
 		<dl>
 			<dt>
