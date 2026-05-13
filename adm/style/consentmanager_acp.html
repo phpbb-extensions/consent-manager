@@ -41,21 +41,8 @@
 		<legend>{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS') }}</legend>
 		<dl>
 			<dt><label for="consentmanager_integrations">{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS') ~ lang('COLON') }}</label><br><span>{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS_EXPLAIN') }}</span><br><br>
-				<span><strong>{{ lang('EXAMPLE') ~ lang('COLON') }}</strong></span>
-				<pre>
-					<code>
-[
-  {
-    "id": "board.analytics",
-    "category": "analytics",
-    "label": "Board Analytics",
-    "description": "Loads a simple analytics library after consent.",
-    "src": "https://cdn.example.com/analytics.js",
-    "async": true
-  }
-]
-					</code>
-				</pre>
+				<span><strong>{{ lang('EXAMPLE') ~ lang('COLON') }}</strong></span><br>
+				<pre><samp class="error">{{ CONSENTMANAGER_INTEGRATIONS_EXAMPLE }}</samp></pre>
 			</dt>
 			<dd><textarea id="consentmanager_integrations" name="consentmanager_integrations" rows="14" cols="90">{{ CONSENTMANAGER_INTEGRATIONS|e('html') }}</textarea></dd>
 		</dl>

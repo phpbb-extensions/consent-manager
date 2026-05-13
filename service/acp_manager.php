@@ -99,8 +99,9 @@ class acp_manager
 			'S_CONSENTMANAGER_ANALYTICS'	=> (bool) $this->config['consentmanager_analytics_enabled'],
 			'S_CONSENTMANAGER_MARKETING'	=> (bool) $this->config['consentmanager_marketing_enabled'],
 			'S_CONSENTMANAGER_MEDIA'		=> (bool) $this->config['consentmanager_media_enabled'],
-			'CONSENTMANAGER_INTEGRATIONS'	=> $this->get_integrations_json(),
 			'CONSENTMANAGER_VERSION'		=> (int) $this->config['consentmanager_consent_version'],
+			'CONSENTMANAGER_INTEGRATIONS'	=> $this->get_integrations_json(),
+			'CONSENTMANAGER_INTEGRATIONS_EXAMPLE' => $this->get_integrations_example_json(),
 		];
 	}
 
@@ -366,6 +367,27 @@ class acp_manager
 		}
 
 		return $pretty_json;
+	}
+
+	/**
+	 * Return example ACP integrations JSON formatted for template output.
+	 *
+	 * @return string
+	 */
+	protected function get_integrations_example_json()
+	{
+		$example = [[
+			'id' => 'example.analytics',
+			'category' => consent_manager_interface::ANALYTICS_CATEGORY,
+			'label' => $this->language->lang('ACP_CONSENTMANAGER_INTEGRATIONS_EXAMPLE_LABEL'),
+			'description' => $this->language->lang('ACP_CONSENTMANAGER_INTEGRATIONS_EXAMPLE_DESC'),
+			'src' => 'https://cdn.example.com/analytics.js',
+			'async' => true,
+		]];
+
+		$json = json_encode($example, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+		return $json === false ? '' : $json;
 	}
 
 	/**

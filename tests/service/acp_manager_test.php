@@ -30,6 +30,16 @@ class acp_manager_test extends \phpbb_database_test_case
 		global $db, $phpbb_root_path, $phpEx;
 
 		$lang_loader = new \phpbb\language\language_file_loader($phpbb_root_path, $phpEx);
+		$lang_loader->set_extension_manager(new \phpbb_mock_extension_manager(
+			$phpbb_root_path,
+			[
+				'phpbb/consentmanager' => [
+					'ext_name'   => 'phpbb/consentmanager',
+					'ext_active' => '1',
+					'ext_path'   => 'ext/phpbb/consentmanager/',
+				],
+			]
+		));
 		$this->language = new \phpbb\language\language($lang_loader);
 		$this->language->add_lang('common', 'phpbb/consentmanager');
 		$this->language->add_lang('acp_consentmanager', 'phpbb/consentmanager');
@@ -155,6 +165,7 @@ class acp_manager_test extends \phpbb_database_test_case
 		$template_data = $manager->get_settings_template_data();
 
 		self::assertSame($this->get_pretty_integrations_json(), $template_data['CONSENTMANAGER_INTEGRATIONS']);
+		self::assertSame($this->get_example_integrations_json(), $template_data['CONSENTMANAGER_INTEGRATIONS_EXAMPLE']);
 		self::assertSame(1, $template_data['CONSENTMANAGER_VERSION']);
 	}
 
@@ -164,6 +175,7 @@ class acp_manager_test extends \phpbb_database_test_case
 		$template_data = $manager->get_settings_template_data();
 
 		self::assertSame('', $template_data['CONSENTMANAGER_INTEGRATIONS']);
+		self::assertSame($this->get_example_integrations_json(), $template_data['CONSENTMANAGER_INTEGRATIONS_EXAMPLE']);
 	}
 
 	public function test_get_settings_template_data_keeps_invalid_json_verbatim()
@@ -789,6 +801,22 @@ class acp_manager_test extends \phpbb_database_test_case
         "id": "board.analytics",
         "category": "analytics",
         "label": "Board Analytics",
+        "description": "Loads a simple analytics library after consent.",
+        "src": "https://cdn.example.com/analytics.js",
+        "async": true
+    }
+]
+JSON;
+	}
+
+	protected function get_example_integrations_json()
+	{
+		return <<<'JSON'
+[
+    {
+        "id": "example.analytics",
+        "category": "analytics",
+        "label": "Example Analytics",
         "description": "Loads a simple analytics library after consent.",
         "src": "https://cdn.example.com/analytics.js",
         "async": true

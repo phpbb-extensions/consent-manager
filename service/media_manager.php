@@ -15,7 +15,6 @@ use s9e\TextFormatter\Configurator\Helpers\TemplateLoader;
 
 class media_manager
 {
-	public const MEDIA_CATEGORY = 'media';
 	public const MEDIA_ALLOWED_PARAMETER = 'S_CONSENTMANAGER_MEDIA_ALLOWED';
 	public const XSL_NAMESPACE = 'http://www.w3.org/1999/XSL/Transform';
 
@@ -44,7 +43,7 @@ class media_manager
 	 */
 	public function configure_iframe_embeds(Configurator $configurator)
 	{
-		if (!$this->consent_manager->is_category_enabled(self::MEDIA_CATEGORY))
+		if (!$this->consent_manager->is_category_enabled(consent_manager_interface::MEDIA_CATEGORY))
 		{
 			return;
 		}
@@ -81,7 +80,7 @@ class media_manager
 	{
 		$renderer->get_renderer()->setParameter(
 			self::MEDIA_ALLOWED_PARAMETER,
-			$this->consent_manager->has_server_consent(self::MEDIA_CATEGORY) ? '1' : ''
+			$this->consent_manager->has_server_consent(consent_manager_interface::MEDIA_CATEGORY) ? '1' : ''
 		);
 	}
 
@@ -242,7 +241,7 @@ class media_manager
 	{
 		$container = $dom->createElement('span');
 		$container->setAttribute('data-consent-media-container', '1');
-		$container->setAttribute('data-consent-category', self::MEDIA_CATEGORY);
+		$container->setAttribute('data-consent-category', consent_manager_interface::MEDIA_CATEGORY);
 
 		$placeholder = $dom->createElement('span');
 		$placeholder->setAttribute('data-consent-media-placeholder', '1');

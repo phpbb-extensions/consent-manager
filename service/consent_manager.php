@@ -188,9 +188,9 @@ class consent_manager implements consent_manager_interface
 
 		$vars = [
 			'S_CONSENTMANAGER_ENABLED'				=> $has_optional_categories,
-			'S_CONSENTMANAGER_ANALYTICS_ENABLED'	=> !empty($categories['analytics']['enabled']),
-			'S_CONSENTMANAGER_MARKETING_ENABLED'	=> !empty($categories['marketing']['enabled']),
-			'S_CONSENTMANAGER_MEDIA_ENABLED'		=> !empty($categories['media']['enabled']),
+			'S_CONSENTMANAGER_ANALYTICS_ENABLED'	=> !empty($categories[self::ANALYTICS_CATEGORY]['enabled']),
+			'S_CONSENTMANAGER_MARKETING_ENABLED'	=> !empty($categories[self::MARKETING_CATEGORY]['enabled']),
+			'S_CONSENTMANAGER_MEDIA_ENABLED'		=> !empty($categories[self::MEDIA_CATEGORY]['enabled']),
 			'CONSENTMANAGER_PAYLOAD'				=> $has_optional_categories ? json_encode($payload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) : '',
 		];
 
@@ -332,10 +332,10 @@ class consent_manager implements consent_manager_interface
 	public function get_categories()
 	{
 		$lang_keys = [
-			'necessary' => ['CONSENTMANAGER_CATEGORY_NECESSARY', 'CONSENTMANAGER_CATEGORY_NECESSARY_EXPLAIN'],
-			'analytics' => ['CONSENTMANAGER_CATEGORY_ANALYTICS', 'CONSENTMANAGER_CATEGORY_ANALYTICS_EXPLAIN'],
-			'marketing' => ['CONSENTMANAGER_CATEGORY_MARKETING', 'CONSENTMANAGER_CATEGORY_MARKETING_EXPLAIN'],
-			'media' => ['CONSENTMANAGER_CATEGORY_MEDIA', 'CONSENTMANAGER_CATEGORY_MEDIA_EXPLAIN'],
+			self::NECESSARY_CATEGORY => ['CONSENTMANAGER_CATEGORY_NECESSARY', 'CONSENTMANAGER_CATEGORY_NECESSARY_EXPLAIN'],
+			self::ANALYTICS_CATEGORY => ['CONSENTMANAGER_CATEGORY_ANALYTICS', 'CONSENTMANAGER_CATEGORY_ANALYTICS_EXPLAIN'],
+			self::MARKETING_CATEGORY => ['CONSENTMANAGER_CATEGORY_MARKETING', 'CONSENTMANAGER_CATEGORY_MARKETING_EXPLAIN'],
+			self::MEDIA_CATEGORY => ['CONSENTMANAGER_CATEGORY_MEDIA', 'CONSENTMANAGER_CATEGORY_MEDIA_EXPLAIN'],
 		];
 		$categories = [];
 
@@ -519,12 +519,12 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function normalize_categories(array $categories)
 	{
-		$normalized = ['necessary'];
+		$normalized = [self::NECESSARY_CATEGORY];
 
 		foreach ($categories as $category)
 		{
 			$category = trim((string) $category);
-			if ($category !== 'necessary' && $this->is_category_enabled($category))
+			if ($category !== self::NECESSARY_CATEGORY && $this->is_category_enabled($category))
 			{
 				$normalized[] = $category;
 			}
@@ -625,7 +625,7 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function is_supported_category($category)
 	{
-		return in_array($category, ['necessary', 'analytics', 'marketing', 'media'], true);
+		return in_array($category, [self::NECESSARY_CATEGORY, self::ANALYTICS_CATEGORY, self::MARKETING_CATEGORY, self::MEDIA_CATEGORY], true);
 	}
 
 	/**
@@ -792,23 +792,23 @@ class consent_manager implements consent_manager_interface
 	protected function get_category_config()
 	{
 		return $this->category_config ?? ($this->category_config = [
-			'necessary' => [
-				'id' => 'necessary',
+			self::NECESSARY_CATEGORY => [
+				'id' => self::NECESSARY_CATEGORY,
 				'required' => true,
 				'enabled' => true,
 			],
-			'analytics' => [
-				'id' => 'analytics',
+			self::ANALYTICS_CATEGORY => [
+				'id' => self::ANALYTICS_CATEGORY,
 				'required' => false,
 				'enabled' => (bool) $this->config['consentmanager_analytics_enabled'],
 			],
-			'marketing' => [
-				'id' => 'marketing',
+			self::MARKETING_CATEGORY => [
+				'id' => self::MARKETING_CATEGORY,
 				'required' => false,
 				'enabled' => (bool) $this->config['consentmanager_marketing_enabled'],
 			],
-			'media' => [
-				'id' => 'media',
+			self::MEDIA_CATEGORY => [
+				'id' => self::MEDIA_CATEGORY,
 				'required' => false,
 				'enabled' => (bool) $this->config['consentmanager_media_enabled'],
 			],

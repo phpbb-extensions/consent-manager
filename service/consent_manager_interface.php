@@ -12,6 +12,11 @@ namespace phpbb\consentmanager\service;
 
 interface consent_manager_interface
 {
+	public const NECESSARY_CATEGORY = 'necessary';
+	public const ANALYTICS_CATEGORY = 'analytics';
+	public const MARKETING_CATEGORY = 'marketing';
+	public const MEDIA_CATEGORY = 'media';
+
 	/**
 	 * Register a consent-aware service definition.
 	 *
