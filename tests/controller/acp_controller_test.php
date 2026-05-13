@@ -14,6 +14,9 @@ require_once __DIR__ . '/../../../../../includes/functions_acp.php';
 
 class acp_controller_test extends \phpbb_test_case
 {
+	protected const ACP_URL = 'adm.php?i=test';
+	protected const EXPORT_URL = 'adm.php?i=test&mode=export';
+
 	/** @var bool */
 	public static $valid_form = true;
 
@@ -75,7 +78,7 @@ class acp_controller_test extends \phpbb_test_case
 		self::$confirm_hidden_fields = null;
 	}
 
-	protected function create_controller($request, $u_action = 'adm.php?i=test')
+	protected function create_controller($request, $u_action = self::ACP_URL)
 	{
 		global $phpbb_root_path, $phpEx;
 		$controller = new \phpbb\consentmanager\controller\acp_controller(
@@ -107,7 +110,7 @@ class acp_controller_test extends \phpbb_test_case
 				'CONSENTMANAGER_VERSION' => 1,
 				'S_ERROR' => false,
 				'ERROR_MSG' => '',
-				'U_ACTION' => 'adm.php?i=test',
+				'U_ACTION' => self::ACP_URL,
 			]);
 
 		$this->create_controller($this->create_request_mock())->handle();
@@ -137,7 +140,7 @@ class acp_controller_test extends \phpbb_test_case
 		$args = [self::callback(static function ($vars) {
 			return $vars['S_ERROR']
 				&& $vars['ERROR_MSG'] === 'Invalid integrations'
-				&& $vars['U_ACTION'] === 'adm.php?i=test'
+				&& $vars['U_ACTION'] === self::ACP_URL
 				&& isset($vars['CONSENTMANAGER_VERSION']);
 		})];
 
@@ -188,25 +191,31 @@ class acp_controller_test extends \phpbb_test_case
 		$this->create_controller($this->create_request_mock(['reset_consent' => 1]))->handle();
 	}
 
-	public function test_handle_rejects_invalid_form_key()
+	/**
+	 * @dataProvider handle_invalid_form_key_data
+	 */
+	public function test_handle_invalid_form_key($action, $manager_method, $log_action = null)
 	{
 		self::$valid_form = false;
 
-		$this->acp_manager->expects(self::never())->method('save_settings');
+		$this->acp_manager->expects(self::never())->method($manager_method);
+
+		if ($log_action !== null)
+		{
+			$this->acp_manager->expects(self::never())->method('log_admin_action')->with($log_action);
+		}
+
 		$this->setExpectedTriggerError(E_USER_WARNING, $this->language->lang('FORM_INVALID'));
 
-		$this->create_controller($this->create_request_mock(['submit' => 1]))->handle();
+		$this->create_controller($this->create_request_mock([$action => 1]))->handle();
 	}
 
-	public function test_handle_reset_consent_rejects_invalid_form_key()
+	public function handle_invalid_form_key_data()
 	{
-		self::$valid_form = false;
-
-		$this->acp_manager->expects(self::never())->method('reset_consent_version');
-		$this->acp_manager->expects(self::never())->method('log_admin_action')->with('LOG_CONSENTMANAGER_REPROMPT');
-		$this->setExpectedTriggerError(E_USER_WARNING, $this->language->lang('FORM_INVALID'));
-
-		$this->create_controller($this->create_request_mock(['reset_consent' => 1]))->handle();
+		return [
+			'submit' => ['submit', 'save_settings'],
+			'reset consent' => ['reset_consent', 'reset_consent_version', 'LOG_CONSENTMANAGER_REPROMPT'],
+		];
 	}
 
 	public function test_handle_logs_export_shows_empty_form()
@@ -221,26 +230,21 @@ class acp_controller_test extends \phpbb_test_case
 				'EXPORT_USERNAME'    => '',
 				'EXPORT_CONSENT_VER' => 0,
 				'U_FIND_USERNAME'    => 'u_find_username',
-				'U_ACTION'           => 'adm.php?i=test&mode=export',
+				'U_ACTION'           => self::EXPORT_URL,
 			]);
 
-		$this->create_controller($this->create_request_mock(), 'adm.php?i=test&mode=export')->handle_logs();
+		$this->create_controller($this->create_request_mock(), self::EXPORT_URL)->handle_logs();
 	}
 
-	public function test_handle_logs_export_rejects_invalid_form_key()
+	/**
+	 * @dataProvider handle_logs_invalid_form_key_data
+	 */
+	public function test_handle_logs_invalid_form_key_before_processing(array $request_values, $confirm_result)
 	{
 		self::$valid_form = false;
+		self::$confirm_result = $confirm_result;
 
-		$this->setExpectedTriggerError(E_USER_WARNING, $this->language->lang('FORM_INVALID'));
-
-		$this->create_controller($this->create_request_mock(['download_csv' => 1]), 'adm.php?i=test&mode=export')->handle_logs();
-	}
-
-	public function test_handle_logs_delete_rejects_invalid_form_key_before_confirmation()
-	{
-		self::$valid_form = false;
-		self::$confirm_result = false;
-
+		$this->acp_manager->expects(self::never())->method('stream_logs_csv');
 		$this->acp_manager->expects(self::never())->method('delete_logs');
 		$this->acp_manager->expects(self::never())->method('log_admin_action');
 		$this->acp_manager->expects(self::never())->method('get_user_id_by_username');
@@ -248,17 +252,45 @@ class acp_controller_test extends \phpbb_test_case
 		$this->template->expects(self::never())->method('assign_vars');
 		$this->setExpectedTriggerError(E_USER_WARNING, $this->language->lang('FORM_INVALID'));
 
-		$request = $this->create_request_mock([
-			'delete_logs' => 1,
-			'export_date_from' => '2024-01-01',
-			'export_date_to' => '2024-12-31',
-			'export_username' => 'Alice',
-			'export_consent_version' => 2,
-		]);
-		$this->create_controller($request, 'adm.php?i=test&mode=export')->handle_logs();
+		$this->create_controller($this->create_request_mock($request_values), self::EXPORT_URL)->handle_logs();
 	}
 
-	public function test_handle_logs_delete_requests_confirmation_with_current_filters()
+	public function handle_logs_invalid_form_key_data()
+	{
+		return [
+			'download csv' => [
+				['download_csv' => 1],
+				false,
+			],
+			'delete logs before confirmation' => [
+				[
+					'delete_logs' => 1,
+					'export_date_from' => '2024-01-01',
+					'export_date_to' => '2024-12-31',
+					'export_username' => 'Alice',
+					'export_consent_version' => 2,
+				],
+				false,
+			],
+			'delete logs after confirmation' => [
+				[
+					'delete_logs' => 1,
+					'export_date_from' => '2024-01-01',
+					'export_date_to' => '2024-12-31',
+					'export_username' => 'Alice',
+					'export_consent_version' => 2,
+					'creation_time' => 1234567890,
+					'form_token' => 'form-token-value',
+				],
+				true,
+			],
+		];
+	}
+
+	/**
+	 * @dataProvider handle_logs_delete_confirmation_data
+	 */
+	public function test_handle_logs_delete_requests_confirmation_with_current_filters(array $request_overrides, array $expected_token_fields)
 	{
 		self::$valid_form = true;
 		self::$confirm_result = false;
@@ -278,31 +310,47 @@ class acp_controller_test extends \phpbb_test_case
 				'EXPORT_USERNAME'    => 'Alice',
 				'EXPORT_CONSENT_VER' => 2,
 				'U_FIND_USERNAME'    => 'u_find_username',
-				'U_ACTION'           => 'adm.php?i=test&mode=export',
+				'U_ACTION'           => self::EXPORT_URL,
 			]);
 
-		$request = $this->create_request_mock([
+		$request = $this->create_request_mock(array_merge([
 			'delete_logs' => 1,
 			'export_date_from' => '2024-01-01',
 			'export_date_to' => '2024-12-31',
 			'export_username' => 'Alice',
 			'export_consent_version' => 2,
-			'creation_time' => 1234567890,
-			'form_token' => 'form-token-value',
-		]);
-		$this->create_controller($request, 'adm.php?i=test&mode=export')->handle_logs();
+		], $request_overrides));
+		$this->create_controller($request, self::EXPORT_URL)->handle_logs();
 
 		self::assertSame($this->language->lang('ACP_CONSENTMANAGER_DELETE_CONFIRM'), self::$confirm_title);
-		self::assertSame([
+		self::assertSame(array_merge([
 			'mode' => 'export',
 			'delete_logs' => 1,
 			'export_date_from' => '2024-01-01',
 			'export_date_to' => '2024-12-31',
 			'export_username' => 'Alice',
 			'export_consent_version' => 2,
-			'creation_time' => 1234567890,
-			'form_token' => 'form-token-value',
-		], self::$confirm_hidden_fields);
+		], $expected_token_fields), self::$confirm_hidden_fields);
+	}
+
+	public function handle_logs_delete_confirmation_data()
+	{
+		return [
+			'with current csrf tokens' => [
+				[
+					'creation_time' => 1234567890,
+					'form_token' => 'form-token-value',
+				],
+				[
+					'creation_time' => 1234567890,
+					'form_token' => 'form-token-value',
+				],
+			],
+			'without current csrf tokens' => [
+				[],
+				[],
+			],
+		];
 	}
 
 	public function test_handle_logs_delete_cancel_returns_to_form_without_invalid_form_error()
@@ -330,7 +378,7 @@ class acp_controller_test extends \phpbb_test_case
 				'EXPORT_USERNAME'    => 'Alice',
 				'EXPORT_CONSENT_VER' => 2,
 				'U_FIND_USERNAME'    => 'u_find_username',
-				'U_ACTION'           => 'adm.php?i=test&mode=export',
+				'U_ACTION'           => self::EXPORT_URL,
 			]);
 
 		$reopened_request = $this->create_request_mock([
@@ -343,7 +391,7 @@ class acp_controller_test extends \phpbb_test_case
 			'creation_time' => 1234567890,
 			'form_token' => 'form-token-value',
 		]);
-		$this->create_controller($reopened_request, 'adm.php?i=test&mode=export')->handle_logs();
+		$this->create_controller($reopened_request, self::EXPORT_URL)->handle_logs();
 
 		self::assertSame('', self::$confirm_title);
 		self::assertNull(self::$confirm_hidden_fields);
@@ -379,7 +427,7 @@ class acp_controller_test extends \phpbb_test_case
 			->with(...$args);
 
 		$request_values[$action] = 1;
-		$this->create_controller($this->create_request_mock($request_values), 'adm.php?i=test&mode=export')->handle_logs();
+		$this->create_controller($this->create_request_mock($request_values), self::EXPORT_URL)->handle_logs();
 	}
 
 	public function handle_logs_invalid_filter_data()
@@ -456,7 +504,7 @@ class acp_controller_test extends \phpbb_test_case
 			$phpbb_root_path,
 			$phpEx
 		);
-		$controller->set_page_url('adm.php?i=test&mode=export');
+		$controller->set_page_url(self::EXPORT_URL);
 		$controller->handle_logs();
 
 		self::assertSame([
@@ -496,30 +544,7 @@ class acp_controller_test extends \phpbb_test_case
 			'creation_time' => 1234567890,
 			'form_token' => 'form-token-value',
 		]);
-		$this->create_controller($request, 'adm.php?i=test&mode=export')->handle_logs();
-	}
-
-	public function test_handle_logs_delete_confirmed_rejects_invalid_form_key()
-	{
-		self::$valid_form = false;
-		self::$confirm_result = true;
-
-		$this->acp_manager->expects(self::never())->method('delete_logs');
-		$this->acp_manager->expects(self::never())->method('log_admin_action');
-		$this->acp_manager->expects(self::never())->method('get_user_id_by_username');
-		$this->acp_manager->expects(self::never())->method('parse_date_filter');
-		$this->setExpectedTriggerError(E_USER_WARNING, $this->language->lang('FORM_INVALID'));
-
-		$request = $this->create_request_mock([
-			'delete_logs' => 1,
-			'export_date_from' => '2024-01-01',
-			'export_date_to' => '2024-12-31',
-			'export_username' => 'Alice',
-			'export_consent_version' => 2,
-			'creation_time' => 1234567890,
-			'form_token' => 'form-token-value',
-		]);
-		$this->create_controller($request, 'adm.php?i=test&mode=export')->handle_logs();
+		$this->create_controller($request, self::EXPORT_URL)->handle_logs();
 	}
 
 	/**
@@ -549,7 +574,7 @@ class acp_controller_test extends \phpbb_test_case
 		$this->create_controller($this->create_request_mock([
 			$action => 1,
 			'export_username' => 'MissingUser',
-		]), 'adm.php?i=test&mode=export')->handle_logs();
+		]), self::EXPORT_URL)->handle_logs();
 	}
 
 	public function handle_logs_unknown_username_data()
