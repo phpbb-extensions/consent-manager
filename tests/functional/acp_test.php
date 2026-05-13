@@ -15,6 +15,13 @@ namespace phpbb\consentmanager\tests\functional;
  */
 class acp_test extends functional_base
 {
+	protected function setUp(): void
+	{
+		parent::setUp();
+
+		$this->add_lang_ext('phpbb/consentmanager', 'acp_consentmanager');
+	}
+
 	public function test_acp_page_renders_consent_manager_settings()
 	{
 		$this->login();
@@ -22,9 +29,9 @@ class acp_test extends functional_base
 
 		$crawler = self::request('GET', $this->get_module_url());
 
-		$this->assertStringContainsString('Consent categories', $crawler->filter('#main')->text());
-		$this->assertStringContainsString('ACP-managed integrations', $crawler->filter('#main')->text());
-		$this->assertStringContainsString('Current consent version', $crawler->filter('#main')->text());
+		$this->assertContainsLang('ACP_CONSENTMANAGER_CATEGORIES', $crawler->filter('#main')->text());
+		$this->assertContainsLang('ACP_CONSENTMANAGER_INTEGRATIONS', $crawler->filter('#main')->text());
+		$this->assertContainsLang('ACP_CONSENTMANAGER_VERSION', $crawler->filter('#main')->text());
 	}
 
 	public function test_acp_form_saves_settings_and_integrations()
@@ -77,10 +84,10 @@ class acp_test extends functional_base
 
 		$before = $this->get_consent_version();
 		$crawler = self::request('GET', $this->get_module_url());
-		$form = $crawler->selectButton('Force re-prompt')->form();
+		$form = $crawler->selectButton($this->lang('ACP_CONSENTMANAGER_FORCE_REPROMPT'))->form();
 		$crawler = self::submit($form);
 
-		$this->assertStringContainsString('Consent version increased. Visitors will be asked to review their settings again.', $crawler->text());
+		$this->assertContainsLang('ACP_CONSENTMANAGER_REPROMPT_SUCCESS', $crawler->text());
 		$this->assertSame($before + 1, $this->get_consent_version());
 	}
 

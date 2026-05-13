@@ -371,6 +371,7 @@ class acp_controller_test extends \phpbb_test_case
 				->willReturnOnConsecutiveCalls(...$parse_results);
 		}
 
+		$error_substring = $this->language->lang($error_substring);
 		$args = [self::callback(static function ($vars) use ($error_substring) {
 			return $vars['S_ERROR'] === true && strpos($vars['ERROR_MSG'], $error_substring) !== false;
 		})];
@@ -393,7 +394,7 @@ class acp_controller_test extends \phpbb_test_case
 					'export_consent_version' => 0,
 				],
 				[false],
-				'Date from',
+				'ACP_CONSENTMANAGER_EXPORT_DATE_FROM',
 			],
 			'invalid date to' => [
 				[
@@ -403,7 +404,7 @@ class acp_controller_test extends \phpbb_test_case
 					'export_consent_version' => 0,
 				],
 				[false],
-				'Date to',
+				'ACP_CONSENTMANAGER_EXPORT_DATE_TO',
 			],
 			'reversed date range' => [
 				[
@@ -413,7 +414,7 @@ class acp_controller_test extends \phpbb_test_case
 					'export_consent_version' => 0,
 				],
 				[1735603200, 1704067200],
-				'Date from',
+				'ACP_CONSENTMANAGER_EXPORT_DATE_FROM',
 			],
 		];
 
