@@ -210,7 +210,7 @@ class acp_controller_test extends \phpbb_test_case
 		$this->create_controller($this->create_request_mock([$action => 1]))->handle();
 	}
 
-	public function handle_invalid_form_key_data()
+	public static function handle_invalid_form_key_data()
 	{
 		return [
 			'submit' => ['submit', 'save_settings'],
@@ -255,7 +255,7 @@ class acp_controller_test extends \phpbb_test_case
 		$this->create_controller($this->create_request_mock($request_values), self::EXPORT_URL)->handle_logs();
 	}
 
-	public function handle_logs_invalid_form_key_data()
+	public static function handle_logs_invalid_form_key_data()
 	{
 		return [
 			'download csv' => [
@@ -333,7 +333,7 @@ class acp_controller_test extends \phpbb_test_case
 		], $expected_token_fields), self::$confirm_hidden_fields);
 	}
 
-	public function handle_logs_delete_confirmation_data()
+	public static function handle_logs_delete_confirmation_data()
 	{
 		return [
 			'with current csrf tokens' => [
@@ -430,7 +430,7 @@ class acp_controller_test extends \phpbb_test_case
 		$this->create_controller($this->create_request_mock($request_values), self::EXPORT_URL)->handle_logs();
 	}
 
-	public function handle_logs_invalid_filter_data()
+	public static function handle_logs_invalid_filter_data()
 	{
 		$cases = [
 			'invalid date from' => [
@@ -577,7 +577,7 @@ class acp_controller_test extends \phpbb_test_case
 		]), self::EXPORT_URL)->handle_logs();
 	}
 
-	public function handle_logs_unknown_username_data()
+	public static function handle_logs_unknown_username_data()
 	{
 		return [
 			'download csv' => ['download_csv'],
