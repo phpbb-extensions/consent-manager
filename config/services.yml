@@ -17,7 +17,6 @@ services:
             - '@dispatcher'
             - '@template.twig.environment'
             - '@path_helper'
-            - '@filesystem'
             - '@request'
 
     phpbb.consentmanager.log_manager:

@@ -15,9 +15,6 @@ class consent_manager_test extends \phpbb_test_case
 	/** @var \phpbb\language\language */
 	protected $language;
 
-	/** @var \phpbb\filesystem\filesystem */
-	protected $filesystem;
-
 	/** @var \phpbb\path_helper */
 	protected $path_helper;
 
@@ -40,8 +37,6 @@ class consent_manager_test extends \phpbb_test_case
 		$this->language = new \phpbb\language\language($lang_loader);
 		$this->language->add_lang('common', 'phpbb/consentmanager');
 		$this->language->add_lang('acp_consentmanager', 'phpbb/consentmanager');
-
-		$this->filesystem = new \phpbb\filesystem\filesystem();
 
 		$request = new \phpbb_mock_request(array(), array(), array(), array(
 			'HTTP_HOST' => 'example.com',
@@ -1177,7 +1172,6 @@ class consent_manager_test extends \phpbb_test_case
 			$dispatcher,
 			$twig_environment,
 			$this->path_helper,
-			$this->filesystem,
 			$request,
 		];
 	}

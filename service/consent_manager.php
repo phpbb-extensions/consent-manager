@@ -13,7 +13,6 @@ namespace phpbb\consentmanager\service;
 use phpbb\config\config;
 use phpbb\config\db_text;
 use phpbb\event\dispatcher_interface;
-use phpbb\filesystem\filesystem;
 use phpbb\language\language;
 use phpbb\path_helper;
 use phpbb\request\request_interface;
@@ -46,9 +45,6 @@ class consent_manager implements consent_manager_interface
 
 	/** @var path_helper */
 	protected $path_helper;
-
-	/** @var filesystem */
-	protected $filesystem;
 
 	/** @var request_interface */
 	protected $request;
@@ -87,10 +83,9 @@ class consent_manager implements consent_manager_interface
 	 * @param dispatcher_interface $dispatcher Event dispatcher
 	 * @param environment          $twig_environment Twig environment
 	 * @param path_helper          $path_helper Path helper
-	 * @param filesystem           $filesystem Filesystem helper
 	 * @param request_interface    $request Request service
 	 */
-	public function __construct(consent_cache $consent_cache, config $config, db_text $config_text, language $language, dispatcher_interface $dispatcher, environment $twig_environment, path_helper $path_helper, filesystem $filesystem, request_interface $request)
+	public function __construct(consent_cache $consent_cache, config $config, db_text $config_text, language $language, dispatcher_interface $dispatcher, environment $twig_environment, path_helper $path_helper, request_interface $request)
 	{
 		$this->consent_cache = $consent_cache;
 		$this->config = $config;
@@ -99,7 +94,6 @@ class consent_manager implements consent_manager_interface
 		$this->dispatcher = $dispatcher;
 		$this->twig_environment = $twig_environment;
 		$this->path_helper = $path_helper;
-		$this->filesystem = $filesystem;
 		$this->request = $request;
 	}
 
@@ -977,7 +971,7 @@ class consent_manager implements consent_manager_interface
 			return $this->local_asset_sources[$asset_path];
 		}
 
-		$template_asset = new asset($asset_path, $this->path_helper, $this->filesystem);
+		$template_asset = new asset($asset_path, $this->path_helper);
 		if (!$this->is_valid_local_asset_path($asset_path) || !$template_asset->is_relative())
 		{
 			return $this->local_asset_sources[$asset_path] = '';
