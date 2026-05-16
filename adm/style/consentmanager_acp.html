@@ -73,9 +73,19 @@
 	<fieldset>
 		<legend>{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS') }}</legend>
 		<dl>
-			<dt><label for="consentmanager_integrations">{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS') ~ lang('COLON') }}</label><br><span>{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS_EXPLAIN') }}</span><br><br>
-				<span><strong>{{ lang('EXAMPLE') ~ lang('COLON') }}</strong></span><br>
-				<pre><samp class="error">{{ CONSENTMANAGER_INTEGRATIONS_EXAMPLE }}</samp></pre>
+			<dt><label for="consentmanager_integrations">{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS') ~ lang('COLON') }}</label>
+				<br>
+				{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS_EXPLAIN') }}<br>
+				<br>
+				{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS_FORMAT') }}<br>
+				<pre><samp class="error">{{ CONSENTMANAGER_INTEGRATIONS_EXAMPLE }}</samp></pre><br>
+				<strong>{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS_REQUIRED') ~ lang('COLON') }}</strong><br>
+				&bull; <samp class="error">id</samp>{{ lang('COLON')}} {{ lang('ACP_CONSENTMANAGER_INTEGRATIONS_REQUIRED_ID') }}<br>
+				&bull; <samp class="error">category</samp>{{ lang('COLON')}} {{ lang('ACP_CONSENTMANAGER_INTEGRATIONS_REQUIRED_CAT') }} <samp class="error">necessary</samp>, <samp class="error">analytics</samp>, <samp class="error">marketing</samp>, <samp class="error">media</samp>.<br>
+				&bull; <samp class="error">src</samp>{{ lang('COLON')}} {{ lang('ACP_CONSENTMANAGER_INTEGRATIONS_REQUIRED_SRC') }}<br>
+				<br>
+				<strong>{{ lang('ACP_CONSENTMANAGER_INTEGRATIONS_OPTIONAL') ~ lang('COLON') }}</strong><br>
+				&bull; <samp class="error">label</samp>, <samp class="error">description</samp>, <samp class="error">async</samp>, <samp class="error">defer</samp>
 			</dt>
 			<dd>
 				<div style="position: relative; display: inline-block;">

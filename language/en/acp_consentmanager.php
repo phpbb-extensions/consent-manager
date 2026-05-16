@@ -28,7 +28,13 @@ $lang = array_merge($lang, [
 	'ACP_CONSENTMANAGER_MEDIA'						=> 'Enable embedded media category',
 	'ACP_CONSENTMANAGER_MEDIA_EXPLAIN'				=> 'Allows videos, players, widgets, and other iframe-based external media to be loaded after consent.',
 	'ACP_CONSENTMANAGER_INTEGRATIONS'				=> 'Manual integrations',
-	'ACP_CONSENTMANAGER_INTEGRATIONS_EXPLAIN'		=> 'Use this to add third-party analytics, marketing, or other scripts directly from the ACP. These integrations appear in the consent UI and are only loaded after the required consent has been granted.<br><br>Provide a JSON array of integrations.<br><br>Each object must include: <samp class="error">id</samp>, <samp class="error">category</samp>, <samp class="error">src</samp>. The <samp class="error">id</samp> may only use letters, numbers, dots, underscores, colons, and hyphens. The <samp class="error">category</samp> must be <samp class="error">necessary</samp>, <samp class="error">analytics</samp>, or <samp class="error">marketing</samp>. The <samp class="error">src</samp> must be a valid http, https, or relative script URL.<br><br>Optional fields: <samp class="error">label</samp>, <samp class="error">description</samp>, <samp class="error">async</samp>, <samp class="error">defer</samp>.',
+	'ACP_CONSENTMANAGER_INTEGRATIONS_EXPLAIN'		=> 'Use this to add third-party analytics, marketing, or other scripts directly from the ACP. These integrations appear in the consent UI and are only loaded after the required consent has been granted.',
+	'ACP_CONSENTMANAGER_INTEGRATIONS_FORMAT'		=> 'Provide a JSON array of integrations. For example:',
+	'ACP_CONSENTMANAGER_INTEGRATIONS_REQUIRED'		=> 'Required properties',
+	'ACP_CONSENTMANAGER_INTEGRATIONS_REQUIRED_ID'	=> 'may only use letters, numbers, dots, underscores, colons, and hyphens.',
+	'ACP_CONSENTMANAGER_INTEGRATIONS_REQUIRED_CAT'	=> 'must be one of these values:',
+	'ACP_CONSENTMANAGER_INTEGRATIONS_REQUIRED_SRC'	=> 'must be a valid http, https, or relative script URL.',
+	'ACP_CONSENTMANAGER_INTEGRATIONS_OPTIONAL'		=> 'Optional properties',
 	'ACP_CONSENTMANAGER_INTEGRATIONS_EXAMPLE_LABEL'	=> 'Example Analytics',
 	'ACP_CONSENTMANAGER_INTEGRATIONS_EXAMPLE_DESC'	=> 'Loads a simple analytics library after consent.',
 	'ACP_CONSENTMANAGER_REGISTRATIONS'				=> 'Registered integrations',
@@ -45,7 +51,6 @@ $lang = array_merge($lang, [
 	'CONSENTMANAGER_CATEGORY_ANALYTICS'				=> 'Analytics',
 	'CONSENTMANAGER_CATEGORY_MARKETING'				=> 'Marketing',
 	'CONSENTMANAGER_CATEGORY_MEDIA'					=> 'Media',
-	'EXAMPLE'										=> 'Example',
 
 	// Consent logs
 	'ACP_CONSENTMANAGER_EXPORT_EXPLAIN'				=> 'Download a CSV file of stored consent log records or permanently delete matching records from the database. All fields are optional; leave them blank to work with the full log.',
