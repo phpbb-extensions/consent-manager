@@ -1062,7 +1062,7 @@ class consent_manager_test extends \phpbb_test_case
 	{
 		$twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
 			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
+			->onlyMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
 			->getMock();
 		$twig_environment->method('get_phpbb_root_path')
 			->willReturn($this->phpbb_root_path);

@@ -70,7 +70,7 @@ class acp_manager_test extends \phpbb_database_test_case
 		$this->create_manager(7, 'admin-session', $log)->log_admin_action($log_action);
 	}
 
-	public function log_admin_action_data()
+	public static function log_admin_action_data()
 	{
 		return [
 			['LOG_CONSENTMANAGER_UPDATED'],

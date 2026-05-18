@@ -292,7 +292,7 @@ class media_manager_test extends \phpbb_test_case
 
 		$renderer = $this->getMockBuilder('\phpbb\textformatter\s9e\renderer')
 			->disableOriginalConstructor()
-			->setMethods(['get_renderer'])
+			->onlyMethods(['get_renderer'])
 			->getMock();
 		$renderer->expects(self::once())
 			->method('get_renderer')

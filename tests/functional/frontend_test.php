@@ -66,7 +66,7 @@ class frontend_test extends functional_base
 		$payload = $this->fetch_frontend_payload();
 		$response = $this->post_log_request($payload, array('analytics', 'analytics', 'unknown'));
 
-		$this->assertSame(200, self::$client->getResponse()->getStatus());
+		$this->assertSame(200, self::$client->getResponse()->getStatusCode());
 		$this->assertSame(array('necessary', 'analytics'), $response['categories']);
 		$this->assertSame($payload['version'], $response['version']);
 
@@ -87,7 +87,7 @@ class frontend_test extends functional_base
 		$payload = $this->fetch_frontend_payload();
 		$response = $this->post_log_request($payload, array('analytics', 'analytics', 'unknown'));
 
-		$this->assertSame(200, self::$client->getResponse()->getStatus());
+		$this->assertSame(200, self::$client->getResponse()->getStatusCode());
 		$this->assertSame(array('necessary', 'analytics'), $response['categories']);
 		$this->assertSame($payload['version'], $response['version']);
 
@@ -107,7 +107,7 @@ class frontend_test extends functional_base
 		$payload = $this->fetch_frontend_payload();
 		$response = $this->post_log_request($payload, array('analytics'), $payload['version'] + 1);
 
-		$this->assertSame(409, self::$client->getResponse()->getStatus());
+		$this->assertSame(409, self::$client->getResponse()->getStatusCode());
 		$this->assertSame('version_mismatch', $response['error']);
 	}
 
