@@ -522,19 +522,11 @@ class consent_manager_test extends \phpbb_test_case
 
 	public function test_register_memoizes_template_assets_within_request()
 	{
-		$twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
-			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
-			->getMock();
-		$twig_environment->method('get_phpbb_root_path')
-			->willReturn($this->phpbb_root_path);
-		$twig_environment->method('getNamespaceLookUpOrder')
-			->willReturn(['__main__']);
-		$find_template_args = ['styles/prosilver/template/consentmanager.js'];
-		$twig_environment->expects(self::once())
-			->method('findTemplate')
-			->with(...$find_template_args)
-			->willReturn($this->phpbb_root_path . 'ext/phpbb/consentmanager/styles/all/template/js/consentmanager.js');
+		$twig_environment = $this->create_twig_environment_mock(
+			'styles/prosilver/template/consentmanager.js',
+			$this->phpbb_root_path . 'ext/phpbb/consentmanager/styles/all/template/js/consentmanager.js',
+			self::once()
+		);
 
 		$manager = $this->get_manager([], '', null, null, $twig_environment);
 		self::assertTrue($manager->register('vendor.asset.first', array(
@@ -552,88 +544,47 @@ class consent_manager_test extends \phpbb_test_case
 
 	public function test_register_re_resolves_template_assets_across_requests()
 	{
-		$first_twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
-			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
-			->getMock();
-		$first_twig_environment->method('get_phpbb_root_path')
-			->willReturn($this->phpbb_root_path);
-		$first_twig_environment->method('getNamespaceLookUpOrder')
-			->willReturn(['__main__']);
-		$find_template_args = ['styles/prosilver/template/consentmanager.js'];
-		$first_twig_environment->expects(self::once())
-			->method('findTemplate')
-			->with(...$find_template_args)
-			->willReturn($this->phpbb_root_path . 'ext/phpbb/consentmanager/styles/all/template/js/consentmanager.js');
+		$asset = 'styles/prosilver/template/consentmanager.js';
+		$resolved = $this->phpbb_root_path . 'ext/phpbb/consentmanager/styles/all/template/js/consentmanager.js';
 
-		$first_manager = $this->get_manager([], '', null, null, $first_twig_environment);
+		$first_manager = $this->get_manager([], '', null, null, $this->create_twig_environment_mock($asset, $resolved, self::once()));
 		self::assertTrue($first_manager->register('vendor.asset.first', array(
 			'category' => 'analytics',
-			'asset' => 'styles/prosilver/template/consentmanager.js',
+			'asset' => $asset,
 		)));
 		self::assertNotSame('', $this->get_service('vendor.asset.first', $first_manager)['scripts'][0]['src']);
 
-		$second_twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
-			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
-			->getMock();
-		$second_twig_environment->method('get_phpbb_root_path')
-			->willReturn($this->phpbb_root_path);
-		$second_twig_environment->method('getNamespaceLookUpOrder')
-			->willReturn(['__main__']);
-		$second_twig_environment->expects(self::once())
-			->method('findTemplate')
-			->with(...$find_template_args)
-			->willReturn($this->phpbb_root_path . 'ext/phpbb/consentmanager/styles/all/template/js/consentmanager.js');
-
-		$second_manager = $this->get_manager([], '', null, null, $second_twig_environment);
+		$second_manager = $this->get_manager([], '', null, null, $this->create_twig_environment_mock($asset, $resolved, self::once()));
 		self::assertTrue($second_manager->register('vendor.asset.second', array(
 			'category' => 'analytics',
-			'asset' => 'styles/prosilver/template/consentmanager.js',
+			'asset' => $asset,
 		)));
 		self::assertNotSame('', $this->get_service('vendor.asset.second', $second_manager)['scripts'][0]['src']);
 	}
 
 	public function test_register_does_not_persist_failed_asset_resolution_across_requests()
 	{
-		$failing_twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
-			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
-			->getMock();
-		$failing_twig_environment->method('get_phpbb_root_path')
-			->willReturn($this->phpbb_root_path);
-		$failing_twig_environment->method('getNamespaceLookUpOrder')
-			->willReturn(['__main__']);
-		$find_template_args = ['styles/prosilver/template/missing-consentmanager.js'];
-		$failing_twig_environment->expects(self::once())
-			->method('findTemplate')
-			->with(...$find_template_args)
-			->willThrowException(new \Twig\Error\LoaderError('Missing template asset'));
+		$missing_asset = 'styles/prosilver/template/missing-consentmanager.js';
+		$resolved = $this->phpbb_root_path . 'ext/phpbb/consentmanager/styles/all/template/js/consentmanager.js';
 
+		$failing_twig_environment = $this->create_twig_environment_mock(
+			$missing_asset,
+			new \Twig\Error\LoaderError('Missing template asset'),
+			self::once(),
+			true
+		);
 		$failing_manager = $this->get_manager([], '', null, null, $failing_twig_environment);
 		self::assertTrue($failing_manager->register('vendor.asset.missing', array(
 			'category' => 'analytics',
-			'asset' => 'styles/prosilver/template/missing-consentmanager.js',
+			'asset' => $missing_asset,
 		)));
 		self::assertCount(0, $this->get_service('vendor.asset.missing', $failing_manager)['scripts']);
 
-		$working_twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
-			->disableOriginalConstructor()
-			->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
-			->getMock();
-		$working_twig_environment->method('get_phpbb_root_path')
-			->willReturn($this->phpbb_root_path);
-		$working_twig_environment->method('getNamespaceLookUpOrder')
-			->willReturn(['__main__']);
-		$working_twig_environment->expects(self::once())
-			->method('findTemplate')
-			->with(...$find_template_args)
-			->willReturn($this->phpbb_root_path . 'ext/phpbb/consentmanager/styles/all/template/js/consentmanager.js');
-
+		$working_twig_environment = $this->create_twig_environment_mock($missing_asset, $resolved, self::once());
 		$working_manager = $this->get_manager([], '', null, null, $working_twig_environment);
 		self::assertTrue($working_manager->register('vendor.asset.fixed', array(
 			'category' => 'analytics',
-			'asset' => 'styles/prosilver/template/missing-consentmanager.js',
+			'asset' => $missing_asset,
 		)));
 		self::assertNotSame('', $this->get_service('vendor.asset.fixed', $working_manager)['scripts'][0]['src']);
 	}
@@ -1111,6 +1062,33 @@ class consent_manager_test extends \phpbb_test_case
 			'asset' => 'styles/prosilver/template/missing-consentmanager.js',
 		)));
 		self::assertSame(array(), $this->get_service('vendor.missing-template', $manager)['scripts']);
+	}
+
+	protected function create_twig_environment_mock($template_path, $result, $invocation_rule, $throws = false)
+	{
+		$twig_environment = $this->getMockBuilder('\phpbb\template\twig\environment')
+			->disableOriginalConstructor()
+			->setMethods(array('get_phpbb_root_path', 'getNamespaceLookUpOrder', 'findTemplate'))
+			->getMock();
+		$twig_environment->method('get_phpbb_root_path')
+			->willReturn($this->phpbb_root_path);
+		$twig_environment->method('getNamespaceLookUpOrder')
+			->willReturn(['__main__']);
+
+		$expectation = $twig_environment->expects($invocation_rule)
+			->method('findTemplate')
+			->with($template_path);
+
+		if ($throws)
+		{
+			$expectation->willThrowException($result);
+		}
+		else
+		{
+			$expectation->willReturn($result);
+		}
+
+		return $twig_environment;
 	}
 
 	protected function get_manager(array $config_values = array(), $stored_integrations = '', $dispatcher = null, $config_text = null, $twig_environment = null, $request = null, $language = null, $consent_cache = null)
