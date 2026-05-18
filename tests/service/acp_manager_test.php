@@ -54,64 +54,30 @@ class acp_manager_test extends \phpbb_database_test_case
 		return new \PHPUnit\DbUnit\DataSet\DefaultDataSet();
 	}
 
-	public function test_log_admin_settings_updated_delegates_to_phpbb_log()
+	/**
+	 * @dataProvider log_admin_action_data
+	 */
+	public function test_log_admin_action_delegates_to_phpbb_log($log_action)
 	{
-		$log_args = ['admin', 7, '127.0.0.1', 'LOG_CONSENTMANAGER_UPDATED'];
 		$log = $this->getMockBuilder('\phpbb\log\log')
 			->disableOriginalConstructor()
 			->setMethods(array('add'))
 			->getMock();
 		$log->expects(self::once())
 			->method('add')
-			->with(...$log_args);
+			->with('admin', 7, '127.0.0.1', $log_action);
 
-		$manager = $this->create_manager(7, 'admin-session', $log);
-		$manager->log_admin_action('LOG_CONSENTMANAGER_UPDATED');
+		$this->create_manager(7, 'admin-session', $log)->log_admin_action($log_action);
 	}
 
-	public function test_log_admin_reprompt_delegates_to_phpbb_log()
+	public function log_admin_action_data()
 	{
-		$log_args = ['admin', 7, '127.0.0.1', 'LOG_CONSENTMANAGER_REPROMPT'];
-		$log = $this->getMockBuilder('\phpbb\log\log')
-			->disableOriginalConstructor()
-			->setMethods(array('add'))
-			->getMock();
-		$log->expects(self::once())
-			->method('add')
-			->with(...$log_args);
-
-		$manager = $this->create_manager(7, 'admin-session', $log);
-		$manager->log_admin_action('LOG_CONSENTMANAGER_REPROMPT');
-	}
-
-	public function test_log_admin_export_delegates_to_phpbb_log()
-	{
-		$log_args = ['admin', 7, '127.0.0.1', 'LOG_CONSENTMANAGER_EXPORT'];
-		$log = $this->getMockBuilder('\phpbb\log\log')
-			->disableOriginalConstructor()
-			->setMethods(array('add'))
-			->getMock();
-		$log->expects(self::once())
-			->method('add')
-			->with(...$log_args);
-
-		$manager = $this->create_manager(7, 'admin-session', $log);
-		$manager->log_admin_action('LOG_CONSENTMANAGER_EXPORT');
-	}
-
-	public function test_log_admin_delete_delegates_to_phpbb_log()
-	{
-		$log_args = ['admin', 7, '127.0.0.1', 'LOG_CONSENTMANAGER_DELETE'];
-		$log = $this->getMockBuilder('\phpbb\log\log')
-			->disableOriginalConstructor()
-			->setMethods(array('add'))
-			->getMock();
-		$log->expects(self::once())
-			->method('add')
-			->with(...$log_args);
-
-		$manager = $this->create_manager(7, 'admin-session', $log);
-		$manager->log_admin_action('LOG_CONSENTMANAGER_DELETE');
+		return [
+			['LOG_CONSENTMANAGER_UPDATED'],
+			['LOG_CONSENTMANAGER_REPROMPT'],
+			['LOG_CONSENTMANAGER_EXPORT'],
+			['LOG_CONSENTMANAGER_DELETE'],
+		];
 	}
 
 	public function test_hash_user_id_returns_hmac_of_user_prefix()
@@ -239,25 +205,14 @@ class acp_manager_test extends \phpbb_database_test_case
 
 	public function test_save_settings_updates_flags_and_integrations()
 	{
-		$config_set_args = ['consentmanager_integrations', trim($this->get_pretty_integrations_json())];
-		$config_text = $this->createMock('\phpbb\config\db_text');
-		$config_text->expects(self::once())
-			->method('set')
-			->with(...$config_set_args);
-
-		$normalize_args = [trim($this->get_pretty_integrations_json()), self::anything()];
-		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
+		[$config_text, $consent_manager, $consent_cache, $text_formatter_cache] = $this->create_save_settings_mocks(
+			trim($this->get_pretty_integrations_json()),
+			self::once(),
+			self::never()
+		);
 		$consent_manager->expects(self::once())
 			->method('normalize_integrations')
-			->with(...$normalize_args);
-
-		$consent_cache = $this->createMock('\phpbb\consentmanager\service\consent_cache');
-		$consent_cache->expects(self::once())
-			->method('invalidate');
-
-		$text_formatter_cache = $this->createMock('\phpbb\textformatter\cache_interface');
-		$text_formatter_cache->expects(self::never())
-			->method('invalidate');
+			->with(trim($this->get_pretty_integrations_json()), self::anything());
 
 		$manager = $this->create_manager(1, 'session', null, $config_text, $consent_manager, $consent_cache, $text_formatter_cache);
 		$errors = [];
@@ -277,23 +232,13 @@ class acp_manager_test extends \phpbb_database_test_case
 
 	public function test_save_settings_invalidates_text_formatter_cache_when_media_setting_changes()
 	{
-		$config_set_args = ['consentmanager_integrations', ''];
-		$config_text = $this->createMock('\phpbb\config\db_text');
-		$config_text->expects(self::once())
-			->method('set')
-			->with(...$config_set_args);
-
-		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
+		[$config_text, $consent_manager, $consent_cache, $text_formatter_cache] = $this->create_save_settings_mocks(
+			'',
+			self::once(),
+			self::once()
+		);
 		$consent_manager->expects(self::never())
 			->method('normalize_integrations');
-
-		$consent_cache = $this->createMock('\phpbb\consentmanager\service\consent_cache');
-		$consent_cache->expects(self::once())
-			->method('invalidate');
-
-		$text_formatter_cache = $this->createMock('\phpbb\textformatter\cache_interface');
-		$text_formatter_cache->expects(self::once())
-			->method('invalidate');
 
 		$manager = $this->create_manager(1, 'session', null, $config_text, $consent_manager, $consent_cache, $text_formatter_cache, [
 			'consentmanager_media_enabled' => 1,
@@ -309,23 +254,13 @@ class acp_manager_test extends \phpbb_database_test_case
 
 	public function test_save_settings_does_not_invalidate_text_formatter_cache_when_media_setting_is_unchanged()
 	{
-		$config_set_args = ['consentmanager_integrations', ''];
-		$config_text = $this->createMock('\phpbb\config\db_text');
-		$config_text->expects(self::once())
-			->method('set')
-			->with(...$config_set_args);
-
-		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
+		[$config_text, $consent_manager, $consent_cache, $text_formatter_cache] = $this->create_save_settings_mocks(
+			'',
+			self::once(),
+			self::never()
+		);
 		$consent_manager->expects(self::never())
 			->method('normalize_integrations');
-
-		$consent_cache = $this->createMock('\phpbb\consentmanager\service\consent_cache');
-		$consent_cache->expects(self::once())
-			->method('invalidate');
-
-		$text_formatter_cache = $this->createMock('\phpbb\textformatter\cache_interface');
-		$text_formatter_cache->expects(self::never())
-			->method('invalidate');
 
 		$manager = $this->create_manager(1, 'session', null, $config_text, $consent_manager, $consent_cache, $text_formatter_cache, [
 			'consentmanager_media_enabled' => 1,
@@ -352,22 +287,16 @@ class acp_manager_test extends \phpbb_database_test_case
 			],
 		];
 
-		$config_text = $this->createMock('\phpbb\config\db_text');
-		$config_set_args = [
-			'consentmanager_integrations',
-			json_encode($integrations, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-		];
-		$config_text->expects(self::once())
-			->method('set')
-			->with(...$config_set_args);
-
-		$normalize_args = [$integrations, self::anything()];
+		[$config_text, , $consent_cache, $text_formatter_cache] = $this->create_save_settings_mocks(
+			json_encode($integrations, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+		);
 		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
 		$consent_manager->expects(self::once())
 			->method('normalize_integrations')
-			->with(...$normalize_args);
+			->with($integrations, self::anything())
+			->willReturn([]);
 
-		$manager = $this->create_manager(1, 'session', null, $config_text, $consent_manager);
+		$manager = $this->create_manager(1, 'session', null, $config_text, $consent_manager, $consent_cache, $text_formatter_cache);
 		$errors = [];
 
 		self::assertTrue($manager->save_settings([
@@ -384,10 +313,7 @@ class acp_manager_test extends \phpbb_database_test_case
 	 */
 	public function test_save_settings_rejects_invalid_integrations($json)
 	{
-		$config_text = $this->createMock('\phpbb\config\db_text');
-		$config_text->expects(self::never())
-			->method('set');
-
+		[$config_text, , $consent_cache] = $this->create_save_settings_mocks(null, self::never());
 		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
 		$consent_manager->expects(self::once())
 			->method('normalize_integrations')
@@ -396,7 +322,7 @@ class acp_manager_test extends \phpbb_database_test_case
 				return [];
 			});
 
-		$manager = $this->create_manager(1, 'session', null, $config_text, $consent_manager);
+		$manager = $this->create_manager(1, 'session', null, $config_text, $consent_manager, $consent_cache);
 		$errors = [];
 
 		self::assertFalse($manager->save_settings([
@@ -421,9 +347,7 @@ class acp_manager_test extends \phpbb_database_test_case
 	 */
 	public function test_save_settings_rejects_invalid_array_integrations($integrations, array $expected_error_specs)
 	{
-		$config_text = $this->createMock('\phpbb\config\db_text');
-		$config_text->expects(self::never())
-			->method('set');
+		[$config_text, , $consent_cache] = $this->create_save_settings_mocks(null, self::never());
 
 		$expected_errors = $this->get_language_messages($expected_error_specs);
 		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
@@ -434,7 +358,7 @@ class acp_manager_test extends \phpbb_database_test_case
 				return [];
 			});
 
-		$manager = $this->create_manager(1, 'session', null, $config_text, $consent_manager);
+		$manager = $this->create_manager(1, 'session', null, $config_text, $consent_manager, $consent_cache);
 		$errors = [];
 
 		self::assertFalse($manager->save_settings([
@@ -582,6 +506,7 @@ class acp_manager_test extends \phpbb_database_test_case
 		$content = stream_get_contents($handle);
 		fclose($handle);
 
+		/** @noinspection PhpRedundantOptionalArgumentInspection */
 		$row = str_getcsv(trim($content), ',', '"', '\\');
 		self::assertCount(4, $row);
 
@@ -627,6 +552,7 @@ class acp_manager_test extends \phpbb_database_test_case
 		$handle = fopen('php://memory', 'wb+');
 		$this->create_manager(1, 'session')->stream_logs_csv($handle);
 		rewind($handle);
+		/** @noinspection PhpRedundantOptionalArgumentInspection */
 		$row = str_getcsv(trim(stream_get_contents($handle)), ',', '"', '\\');
 		fclose($handle);
 
@@ -775,6 +701,39 @@ class acp_manager_test extends \phpbb_database_test_case
 			$phpEx,
 			'phpbb_consentmanager_logs'
 		);
+	}
+
+	/**
+	 * Creates the four mocks common to all save_settings tests.
+	 *
+	 * @param string|null $expected_stored_value  Value expected to be passed to config_text->set(), or null to expect never.
+	 * @param mixed       $cache_invocation       Invocation rule for consent_cache->invalidate() (default: once).
+	 * @param mixed       $text_formatter_invocation Invocation rule for text_formatter_cache->invalidate() (default: never).
+	 */
+	protected function create_save_settings_mocks($expected_stored_value, $cache_invocation = null, $text_formatter_invocation = null)
+	{
+		$config_text = $this->createMock('\phpbb\config\db_text');
+		if ($expected_stored_value === null)
+		{
+			$config_text->expects(self::never())->method('set');
+		}
+		else
+		{
+			$config_text->expects(self::once())->method('set')
+				->with('consentmanager_integrations', $expected_stored_value);
+		}
+
+		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
+		$consent_manager->method('normalize_integrations')
+			->willReturn([]);
+
+		$consent_cache = $this->createMock('\phpbb\consentmanager\service\consent_cache');
+		$consent_cache->expects($cache_invocation ?? self::once())->method('invalidate');
+
+		$text_formatter_cache = $this->createMock('\phpbb\textformatter\cache_interface');
+		$text_formatter_cache->expects($text_formatter_invocation ?? self::never())->method('invalidate');
+
+		return [$config_text, $consent_manager, $consent_cache, $text_formatter_cache];
 	}
 
 	protected function get_config_text($stored_integrations = '')

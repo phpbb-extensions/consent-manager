@@ -43,7 +43,7 @@ class frontend_test extends functional_base
 
 	public function test_log_endpoint_rejects_invalid_json_payload()
 	{
-		$payload = $this->extract_payload(self::request('GET', 'index.php') ? self::get_content() : '');
+		$payload = $this->fetch_frontend_payload();
 
 		self::$client->request(
 			'POST',
@@ -63,22 +63,9 @@ class frontend_test extends functional_base
 
 	public function test_log_endpoint_accepts_valid_anonymous_submission_without_persisting_it()
 	{
-		$payload = $this->extract_payload(self::request('GET', 'index.php') ? self::get_content() : '');
+		$payload = $this->fetch_frontend_payload();
+		$response = $this->post_log_request($payload, array('analytics', 'analytics', 'unknown'));
 
-		self::$client->request(
-			'POST',
-			$payload['logEndpoint'],
-			array(),
-			array(),
-			array('CONTENT_TYPE' => 'application/json'),
-			json_encode(array(
-				'hash' => $payload['logHash'],
-				'version' => $payload['version'],
-				'categories' => array('analytics', 'analytics', 'unknown'),
-			))
-		);
-
-		$response = json_decode(self::$client->getResponse()->getContent(), true);
 		$this->assertSame(200, self::$client->getResponse()->getStatus());
 		$this->assertSame(array('necessary', 'analytics'), $response['categories']);
 		$this->assertSame($payload['version'], $response['version']);
@@ -97,22 +84,9 @@ class frontend_test extends functional_base
 		$this->create_user('consentuser');
 		$this->login('consentuser');
 
-		$payload = $this->extract_payload(self::request('GET', 'index.php') ? self::get_content() : '');
+		$payload = $this->fetch_frontend_payload();
+		$response = $this->post_log_request($payload, array('analytics', 'analytics', 'unknown'));
 
-		self::$client->request(
-			'POST',
-			$payload['logEndpoint'],
-			array(),
-			array(),
-			array('CONTENT_TYPE' => 'application/json'),
-			json_encode(array(
-				'hash' => $payload['logHash'],
-				'version' => $payload['version'],
-				'categories' => array('analytics', 'analytics', 'unknown'),
-			))
-		);
-
-		$response = json_decode(self::$client->getResponse()->getContent(), true);
 		$this->assertSame(200, self::$client->getResponse()->getStatus());
 		$this->assertSame(array('necessary', 'analytics'), $response['categories']);
 		$this->assertSame($payload['version'], $response['version']);
@@ -130,8 +104,20 @@ class frontend_test extends functional_base
 
 	public function test_log_endpoint_rejects_stale_version()
 	{
-		$payload = $this->extract_payload(self::request('GET', 'index.php') ? self::get_content() : '');
+		$payload = $this->fetch_frontend_payload();
+		$response = $this->post_log_request($payload, array('analytics'), $payload['version'] + 1);
 
+		$this->assertSame(409, self::$client->getResponse()->getStatus());
+		$this->assertSame('version_mismatch', $response['error']);
+	}
+
+	protected function fetch_frontend_payload()
+	{
+		return $this->extract_payload(self::request('GET', 'index.php') ? self::get_content() : '');
+	}
+
+	protected function post_log_request(array $payload, array $categories, $version = null)
+	{
 		self::$client->request(
 			'POST',
 			$payload['logEndpoint'],
@@ -140,14 +126,12 @@ class frontend_test extends functional_base
 			array('CONTENT_TYPE' => 'application/json'),
 			json_encode(array(
 				'hash' => $payload['logHash'],
-				'version' => $payload['version'] + 1,
-				'categories' => array('analytics'),
+				'version' => $version ?? $payload['version'],
+				'categories' => $categories,
 			))
 		);
 
-		$response = json_decode(self::$client->getResponse()->getContent(), true);
-		$this->assertSame(409, self::$client->getResponse()->getStatus());
-		$this->assertSame('version_mismatch', $response['error']);
+		return json_decode(self::$client->getResponse()->getContent(), true);
 	}
 
 	protected function extract_payload($content)

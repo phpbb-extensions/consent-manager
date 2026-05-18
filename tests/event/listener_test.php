@@ -12,8 +12,11 @@ namespace phpbb\consentmanager\tests\event;
 
 class listener_test extends \phpbb_test_case
 {
-	/** @var \phpbb\language\language */
+	/** @var \phpbb\language\language|\PHPUnit\Framework\MockObject\MockObject */
 	protected $language;
+
+	/** @var \phpbb\consentmanager\service\media_manager|\PHPUnit\Framework\MockObject\MockObject */
+	protected $media_manager;
 
 	protected function setUp(): void
 	{
@@ -22,12 +25,24 @@ class listener_test extends \phpbb_test_case
 		global $user;
 
 		$this->language = $this->createMock('\phpbb\language\language');
+		$this->media_manager = $this->createMock('\phpbb\consentmanager\service\media_manager');
 
 		$user = new \phpbb\user($this->language, '\phpbb\datetime');
 		$user->data = [
 			'user_id' => ANONYMOUS,
 			'user_form_salt' => 'listener-test-salt',
 		];
+	}
+
+	protected function create_listener($helper = null, $consent_manager = null, $template = null, $media_manager = null)
+	{
+		return new \phpbb\consentmanager\event\listener(
+			$helper ?? $this->createMock('\phpbb\controller\helper'),
+			$this->language,
+			$consent_manager ?? $this->createMock('\phpbb\consentmanager\service\consent_manager_interface'),
+			$template ?? $this->createMock('\phpbb\template\template'),
+			$media_manager ?? $this->media_manager
+		);
 	}
 
 	public function test_get_subscribed_events()
@@ -43,22 +58,11 @@ class listener_test extends \phpbb_test_case
 	{
 		$configurator = new \s9e\TextFormatter\Configurator();
 
-		$args = [$configurator];
-
-		$media_manager = $this->createMock('\phpbb\consentmanager\service\media_manager');
-		$media_manager->expects(self::once())
+		$this->media_manager->expects(self::once())
 			->method('configure_iframe_embeds')
-			->with(...$args);
+			->with($configurator);
 
-		$listener = new \phpbb\consentmanager\event\listener(
-			$this->createMock('\phpbb\controller\helper'),
-			$this->language,
-			$this->createMock('\phpbb\consentmanager\service\consent_manager_interface'),
-			$this->createMock('\phpbb\template\template'),
-			$media_manager
-		);
-
-		$listener->configure_iframe_embeds(new \phpbb\event\data([
+		$this->create_listener()->configure_iframe_embeds(new \phpbb\event\data([
 			'configurator' => $configurator,
 		]));
 	}
@@ -69,22 +73,11 @@ class listener_test extends \phpbb_test_case
 			->disableOriginalConstructor()
 			->getMock();
 
-		$args = [$renderer];
-
-		$media_manager = $this->createMock('\phpbb\consentmanager\service\media_manager');
-		$media_manager->expects(self::once())
+		$this->media_manager->expects(self::once())
 			->method('configure_iframe_renderer')
-			->with(...$args);
+			->with($renderer);
 
-		$listener = new \phpbb\consentmanager\event\listener(
-			$this->createMock('\phpbb\controller\helper'),
-			$this->language,
-			$this->createMock('\phpbb\consentmanager\service\consent_manager_interface'),
-			$this->createMock('\phpbb\template\template'),
-			$media_manager
-		);
-
-		$listener->configure_iframe_renderer(new \phpbb\event\data([
+		$this->create_listener()->configure_iframe_renderer(new \phpbb\event\data([
 			'renderer' => $renderer,
 		]));
 	}
@@ -171,7 +164,7 @@ class listener_test extends \phpbb_test_case
 				]]
 			);
 
-		$listener = new class($helper, $this->language, $consent_manager, $template, $this->createMock('\phpbb\consentmanager\service\media_manager'), $invoke) extends \phpbb\consentmanager\event\listener {
+		$listener = new class($helper, $this->language, $consent_manager, $template, $this->media_manager, $invoke) extends \phpbb\consentmanager\event\listener {
 			/** @var bool */
 			protected $is_frontend_context;
 
@@ -214,14 +207,6 @@ class listener_test extends \phpbb_test_case
 		$template->expects(self::never())
 			->method('assign_block_vars');
 
-		$listener = new \phpbb\consentmanager\event\listener(
-			$helper,
-			$this->language,
-			$consent_manager,
-			$template,
-			$this->createMock('\phpbb\consentmanager\service\media_manager')
-		);
-
-		$listener->inject_frontend();
+		$this->create_listener($helper, $consent_manager, $template)->inject_frontend();
 	}
 }
