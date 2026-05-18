@@ -15,15 +15,14 @@ Simple, GDPR-ready privacy controls with category-based consent, ACP management 
 
 ## Features
 
-- Consent banner
-- Preference modal
-- Category-based controls
+- Consent banner and preference modal
+- Category-based consent options
 - Consent logging
-- Version resets
-- ACP configuration
-- Extension integrations
+- Consent version resets
+- ACP-managed categories, integrations, and audit logs
+- Extension integration API
 
-Supported categories:
+### Supported categories:
 
 - Necessary
 - Analytics
@@ -31,14 +30,6 @@ Supported categories:
 - Embedded media
 
 Necessary cookies stay enabled. The rest requires consent.
-
-## Built for phpBB admins
-
-Manage categories, integrations, consent resets, and audit logs directly from the ACP.
-
-- No external consent platforms 
-- No bloated configuration
-- No enterprise dashboards
 
 ## For phpBB extension developers
 
