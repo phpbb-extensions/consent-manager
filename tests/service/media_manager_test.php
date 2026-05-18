@@ -167,42 +167,14 @@ class media_manager_test extends \phpbb_test_case
 
 	public function test_configure_iframe_renderer_sets_media_allowed_parameter()
 	{
-		$parameter_args = ['S_CONSENTMANAGER_MEDIA_ALLOWED', '1'];
-		$inner_renderer = $this->createMock('\s9e\TextFormatter\Renderer');
-		$inner_renderer->expects(self::once())
-			->method('setParameter')
-			->with(...$parameter_args);
-
-		$renderer = $this->getMockBuilder('\phpbb\textformatter\s9e\renderer')
-			->disableOriginalConstructor()
-			->onlyMethods(['get_renderer'])
-			->getMock();
-		$renderer->expects(self::once())
-			->method('get_renderer')
-			->willReturn($inner_renderer);
-
 		$this->expect_media_consent(true);
-		$this->manager->configure_iframe_renderer($renderer);
+		$this->manager->configure_iframe_renderer($this->create_renderer_mock('S_CONSENTMANAGER_MEDIA_ALLOWED', '1'));
 	}
 
 	public function test_configure_iframe_renderer_clears_media_allowed_parameter_without_consent()
 	{
-		$parameter_args = ['S_CONSENTMANAGER_MEDIA_ALLOWED', ''];
-		$inner_renderer = $this->createMock('\s9e\TextFormatter\Renderer');
-		$inner_renderer->expects(self::once())
-			->method('setParameter')
-			->with(...$parameter_args);
-
-		$renderer = $this->getMockBuilder('\phpbb\textformatter\s9e\renderer')
-			->disableOriginalConstructor()
-			->onlyMethods(['get_renderer'])
-			->getMock();
-		$renderer->expects(self::once())
-			->method('get_renderer')
-			->willReturn($inner_renderer);
-
 		$this->expect_media_consent(false);
-		$this->manager->configure_iframe_renderer($renderer);
+		$this->manager->configure_iframe_renderer($this->create_renderer_mock('S_CONSENTMANAGER_MEDIA_ALLOWED', ''));
 	}
 
 	/**
@@ -309,6 +281,24 @@ class media_manager_test extends \phpbb_test_case
 		$template = \s9e\TextFormatter\Configurator\Helpers\TemplateLoader::save($dom);
 		self::assertStringNotContainsString('data-s9e-live', $template);
 		self::assertStringNotContainsString('data-s9e-test', $template);
+	}
+
+	protected function create_renderer_mock($parameter_name, $parameter_value)
+	{
+		$inner_renderer = $this->createMock('\s9e\TextFormatter\Renderer');
+		$inner_renderer->expects(self::once())
+			->method('setParameter')
+			->with($parameter_name, $parameter_value);
+
+		$renderer = $this->getMockBuilder('\phpbb\textformatter\s9e\renderer')
+			->disableOriginalConstructor()
+			->setMethods(['get_renderer'])
+			->getMock();
+		$renderer->expects(self::once())
+			->method('get_renderer')
+			->willReturn($inner_renderer);
+
+		return $renderer;
 	}
 
 	protected function expect_media_enabled($enabled)

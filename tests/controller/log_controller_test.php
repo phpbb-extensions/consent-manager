@@ -12,14 +12,30 @@ namespace phpbb\consentmanager\tests\controller;
 
 class log_controller_test extends \phpbb_test_case
 {
+	/** @var \phpbb\consentmanager\service\log_manager|\PHPUnit\Framework\MockObject\MockObject */
+	protected $log_manager;
+
+	/** @var \phpbb\consentmanager\service\consent_manager_interface|\PHPUnit\Framework\MockObject\MockObject */
+	protected $consent_manager;
+
+	/** @var \phpbb\consentmanager\controller\log_controller */
+	protected $controller;
+
+	protected function setUp(): void
+	{
+		parent::setUp();
+
+		$this->log_manager = $this->createMock('\phpbb\consentmanager\service\log_manager');
+		$this->consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
+		$this->controller = new \phpbb\consentmanager\controller\log_controller(
+			$this->log_manager,
+			$this->consent_manager
+		);
+	}
+
 	public function test_log_rejects_invalid_json_payload()
 	{
-		$controller = new \phpbb\consentmanager\controller\log_controller(
-			$this->createMock('\phpbb\consentmanager\service\log_manager'),
-			$this->createMock('\phpbb\consentmanager\service\consent_manager_interface')
-		);
-
-		$response = $controller->log(\Symfony\Component\HttpFoundation\Request::create(
+		$response = $this->controller->log(\Symfony\Component\HttpFoundation\Request::create(
 			'/consent/log',
 			'POST',
 			array(),
@@ -41,12 +57,10 @@ class log_controller_test extends \phpbb_test_case
 	 */
 	public function test_log_returns_service_validation_failure($submission_error, $expected_status)
 	{
-		$log_manager = $this->createMock('\phpbb\consentmanager\service\log_manager');
-		$log_manager->expects(self::never())
+		$this->log_manager->expects(self::never())
 			->method('log_consent');
 
-		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
-		$consent_manager->expects(self::once())
+		$this->consent_manager->expects(self::once())
 			->method('validate_log_payload')
 			->with(array('hash' => 'bad'))
 			->willReturn(array(
@@ -54,8 +68,7 @@ class log_controller_test extends \phpbb_test_case
 				'error' => $submission_error,
 			));
 
-		$controller = new \phpbb\consentmanager\controller\log_controller($log_manager, $consent_manager);
-		$response = $controller->log(new \Symfony\Component\HttpFoundation\Request(array(), array(), array(), array(), array(), array(), json_encode(array(
+		$response = $this->controller->log(new \Symfony\Component\HttpFoundation\Request(array(), array(), array(), array(), array(), array(), json_encode(array(
 			'hash' => 'bad',
 		))));
 
@@ -65,14 +78,11 @@ class log_controller_test extends \phpbb_test_case
 
 	public function test_log_persists_valid_submission()
 	{
-		$arguments = [['necessary', 'analytics'], 5];
-		$log_manager = $this->createMock('\phpbb\consentmanager\service\log_manager');
-		$log_manager->expects(self::once())
+		$this->log_manager->expects(self::once())
 			->method('log_consent')
-			->with(...$arguments);
+			->with(['necessary', 'analytics'], 5);
 
-		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
-		$consent_manager->expects(self::once())
+		$this->consent_manager->expects(self::once())
 			->method('validate_log_payload')
 			->willReturn(array(
 				'success' => true,
@@ -80,8 +90,7 @@ class log_controller_test extends \phpbb_test_case
 				'version' => 5,
 			));
 
-		$controller = new \phpbb\consentmanager\controller\log_controller($log_manager, $consent_manager);
-		$response = $controller->log(new \Symfony\Component\HttpFoundation\Request(array(), array(), array(), array(), array(), array(), json_encode(array(
+		$response = $this->controller->log(new \Symfony\Component\HttpFoundation\Request(array(), array(), array(), array(), array(), array(), json_encode(array(
 			'hash' => 'good',
 			'version' => 5,
 			'categories' => array('analytics'),

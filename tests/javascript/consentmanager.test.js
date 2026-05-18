@@ -1,3 +1,4 @@
+/* jshint ignore:start */
 const fs = require('fs');
 const path = require('path');
 const { JSDOM, VirtualConsole } = require('jsdom');
@@ -20,9 +21,9 @@ function createPayload(overrides) {
 			{ id: 'marketing', enabled: true, required: false },
 			{ id: 'media', enabled: true, required: false }
 		],
-		requiredCategories: ['necessary'],
-		enabledCategories: ['necessary', 'analytics', 'marketing', 'media'],
-		optionalCategories: ['analytics', 'marketing', 'media'],
+		requiredCategories: [ 'necessary' ],
+		enabledCategories: [ 'necessary', 'analytics', 'marketing', 'media' ],
+		optionalCategories: [ 'analytics', 'marketing', 'media' ],
 		scripts: []
 	}, overrides || {});
 }
@@ -180,8 +181,8 @@ afterEach(() => {
 });
 
 test('prefers the newest stored state and synchronizes cookie and local storage', () => {
-	const localState = createState(['necessary', 'marketing'], '2026-04-27T00:00:00.000Z');
-	const cookieState = createState(['necessary', 'analytics'], '2026-04-28T00:00:00.000Z');
+	const localState = createState([ 'necessary', 'marketing' ], '2026-04-27T00:00:00.000Z');
+	const cookieState = createState([ 'necessary', 'analytics' ], '2026-04-28T00:00:00.000Z');
 	const { window, document, payload } = setupConsentManager({
 		localState,
 		cookieState
@@ -195,7 +196,7 @@ test('prefers the newest stored state and synchronizes cookie and local storage'
 test('replays queued API calls and executes consented registered scripts', () => {
 	const ready = jest.fn();
 	const { window } = setupConsentManager({
-		localState: createState(['necessary', 'analytics'], '2026-04-28T00:00:00.000Z'),
+		localState: createState([ 'necessary', 'analytics' ], '2026-04-28T00:00:00.000Z'),
 		queue: {
 			_queue: [
 				[
@@ -206,7 +207,7 @@ test('replays queued API calls and executes consented registered scripts', () =>
 						inline: 'window.analyticsCounter = (window.analyticsCounter || 0) + 1;'
 					}
 				],
-				['ready', ready]
+				[ 'ready', ready ]
 			]
 		}
 	});
@@ -226,7 +227,7 @@ test('accept-all persists consent, logs the decision, and updates the UI state',
 	click(window, '[data-consent-action="accept-all"]');
 
 	expect(window.consentManager.getState()).toEqual({
-		categories: ['necessary', 'analytics', 'marketing', 'media'],
+		categories: [ 'necessary', 'analytics', 'marketing', 'media' ],
 		timestamp: expect.any(String),
 		version: payload.version
 	});
@@ -240,13 +241,13 @@ test('accept-all persists consent, logs the decision, and updates the UI state',
 	expect(JSON.parse(requests[0].body)).toEqual({
 		hash: payload.logHash,
 		version: payload.version,
-		categories: ['necessary', 'analytics', 'marketing', 'media']
+		categories: [ 'necessary', 'analytics', 'marketing', 'media' ]
 	});
 });
 
 test('reject-all logs the updated decision before reloading when consent is revoked', () => {
 	const { window, payload, requests, jsdomErrors } = setupConsentManager({
-		localState: createState(['necessary', 'analytics', 'marketing', 'media'], '2026-04-28T00:00:00.000Z')
+		localState: createState([ 'necessary', 'analytics', 'marketing', 'media' ], '2026-04-28T00:00:00.000Z')
 	});
 
 	click(window, '[data-consent-action="reject-all"]');
@@ -257,7 +258,7 @@ test('reject-all logs the updated decision before reloading when consent is revo
 	expect(JSON.parse(requests[0].body)).toEqual({
 		hash: payload.logHash,
 		version: payload.version,
-		categories: ['necessary']
+		categories: [ 'necessary' ]
 	});
 	expect(jsdomErrors).toHaveLength(1);
 	expect(jsdomErrors[0].message).toContain('Not implemented: navigation');
@@ -265,7 +266,7 @@ test('reject-all logs the updated decision before reloading when consent is revo
 
 test('registerScript blocks unsafe sources and executes safe inline scripts', () => {
 	const { window, document } = setupConsentManager({
-		localState: createState(['necessary', 'analytics'], '2026-04-28T00:00:00.000Z')
+		localState: createState([ 'necessary', 'analytics' ], '2026-04-28T00:00:00.000Z')
 	});
 
 	expect(window.consentManager.registerScript('unsafe', {
@@ -284,7 +285,7 @@ test('registerScript blocks unsafe sources and executes safe inline scripts', ()
 
 test('processes deferred consent scripts and copies only safe attributes', () => {
 	const { window, document } = setupConsentManager({
-		localState: createState(['necessary', 'analytics'], '2026-04-28T00:00:00.000Z'),
+		localState: createState([ 'necessary', 'analytics' ], '2026-04-28T00:00:00.000Z'),
 		extraMarkup: `
 			<script
 				type="text/plain"
@@ -307,7 +308,7 @@ test('processes deferred consent scripts and copies only safe attributes', () =>
 
 test('activates deferred media embeds after media consent is granted', () => {
 	const { window, document } = setupConsentManager({
-		localState: createState(['necessary', 'media'], '2026-04-28T00:00:00.000Z'),
+		localState: createState([ 'necessary', 'media' ], '2026-04-28T00:00:00.000Z'),
 		extraMarkup: `
 			<span data-consent-media-container="1" data-consent-category="media">
 				<span data-consent-media-placeholder="1"></span>
@@ -374,7 +375,7 @@ test('saving newly granted media consent activates blocked embeds immediately', 
 
 test('activates deferred embeds when the media content element is the iframe itself', () => {
 	const { document } = setupConsentManager({
-		localState: createState(['necessary', 'media'], '2026-04-28T00:00:00.000Z'),
+		localState: createState([ 'necessary', 'media' ], '2026-04-28T00:00:00.000Z'),
 		extraMarkup: `
 			<span data-consent-media-container="1" data-consent-category="media">
 				<span data-consent-media-placeholder="1"></span>
@@ -435,7 +436,7 @@ test('saving consent activates deferred embeds when the media content element is
 
 test('revoking only media consent reloads the page', () => {
 	const { window, document, payload, requests, jsdomErrors } = setupConsentManager({
-		localState: createState(['necessary', 'analytics', 'marketing', 'media'], '2026-04-28T00:00:00.000Z')
+		localState: createState([ 'necessary', 'analytics', 'marketing', 'media' ], '2026-04-28T00:00:00.000Z')
 	});
 	const analyticsCheckbox = document.querySelector('[data-consent-toggle="analytics"]');
 	const marketingCheckbox = document.querySelector('[data-consent-toggle="marketing"]');
@@ -453,7 +454,7 @@ test('revoking only media consent reloads the page', () => {
 	expect(JSON.parse(requests[0].body)).toEqual({
 		hash: payload.logHash,
 		version: payload.version,
-		categories: ['necessary']
+		categories: [ 'necessary' ]
 	});
 	expect(jsdomErrors).toHaveLength(1);
 	expect(jsdomErrors[0].message).toContain('Not implemented: navigation');
