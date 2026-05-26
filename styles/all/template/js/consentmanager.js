@@ -1152,7 +1152,6 @@
 	{
 		document.addEventListener('DOMContentLoaded', function() {
 			processRegisteredScripts();
-			processDeferredEmbeds(document);
 			initUi();
 		});
 	}
