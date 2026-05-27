@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.0-a1 - 2026-05-27
+
+### Changed
+
+- Blocked iframes now show the original URL, so users can easily identify the source of the blocked content and visit it directly without needing to enable consent.
+- Raised the minimum phpBB requirement to 3.3.5 to avoid installing errors on PHP 8.1+.
+
+### Fixed
+
+- Fixed a bug where the registry of active services would not show Consent Manager's iframe service when no other services are registered.
+- Fixed a minor issue with deferred iframes being evaluated twice.
+- Bumped minimum phpBB board requirements to 3.3.5 or newer.
+
 ## 0.4.0-dev - 2026-05-16
 
 ### Added
