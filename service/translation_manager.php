@@ -401,7 +401,7 @@ class translation_manager
 		$lang = [];
 		$path = $this->root_path . 'ext/phpbb/consentmanager/language/' . $lang_iso . '/common.' . $this->php_ext;
 
-		if (!file_exists($path))
+		if (!preg_match('/^[a-z0-9_-]+$/i', $lang_iso) || !file_exists($path))
 		{
 			$path = $this->root_path . 'ext/phpbb/consentmanager/language/en/common.' . $this->php_ext;
 		}
