@@ -201,7 +201,7 @@ class translation_manager
 				}
 
 				$translation_text = trim((string) $translation_text);
-				if ($translation_text === '')
+				if ($translation_text === '' || $translation_text === $this->get_language_default($lang_iso, self::BANNER_FIELDS[$translation_key]['fallback']))
 				{
 					$this->delete_translation($translation_key, $lang_iso);
 					continue;
