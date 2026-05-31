@@ -237,6 +237,39 @@ class acp_controller_test extends \phpbb_test_case
 		$this->create_controller($this->create_request_mock(['submit' => 1], ['translations' => $translations]))->handle_consent_text();
 	}
 
+	public function test_handle_consent_text_uses_sanitized_multibyte_request_variable()
+	{
+		$translations = [
+			'en' => [
+				'banner_message' => 'Custom message 🧑🏽‍💻',
+			],
+		];
+		$expected_default = ['' => ['' => '']];
+
+		$request = $this->getMockBuilder('\phpbb\request\request')
+			->disableOriginalConstructor()
+			->setMethods(['is_set_post', 'variable', 'raw_variable'])
+			->getMock();
+		$request->method('is_set_post')
+			->willReturnCallback(static function ($name) {
+				return $name === 'submit';
+			});
+		$request->expects(self::once())
+			->method('variable')
+			->with('translations', $expected_default, true, \phpbb\request\request_interface::POST)
+			->willReturn(array_merge($expected_default, $translations));
+		$request->expects(self::never())
+			->method('raw_variable');
+
+		$this->translation_manager->expects(self::once())
+			->method('save_translations')
+			->with($translations, ['banner_title', 'banner_message', 'banner_subtext'], self::anything())
+			->willReturn(true);
+		$this->setExpectedTriggerError(E_USER_NOTICE, $this->language->lang('ACP_CONSENTMANAGER_BANNER_UPDATED'));
+
+		$this->create_controller($request)->handle_consent_text();
+	}
+
 	/**
 	 * @dataProvider handle_invalid_form_key_data
 	 */

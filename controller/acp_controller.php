@@ -136,7 +136,8 @@ class acp_controller
 		{
 			$this->validate_form_key('phpbb_consentmanager_banner');
 
-			$translations = $this->request->raw_variable('translations', [], request_interface::POST);
+			$translations = $this->request->variable('translations', ['' => ['' => '']], true, request_interface::POST);
+			unset($translations['']);
 			$errors = [];
 			$saved = $this->translation_manager->save_translations(
 				is_array($translations) ? $translations : [],
