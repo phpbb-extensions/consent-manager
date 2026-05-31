@@ -120,7 +120,7 @@ class translation_manager
 			);
 		}
 
-		return $this->parse_text_for_display($this->get_translation($translation_key, $fallback_lang_key, $lang_iso));
+		return $this->language->lang($fallback_lang_key);
 	}
 
 	/**
@@ -403,22 +403,5 @@ class translation_manager
 		}
 
 		return $lang;
-	}
-
-	/**
-	 * Parse raw language-file text for safe display.
-	 *
-	 * @param string $text Raw text
-	 *
-	 * @return string
-	 */
-	protected function parse_text_for_display($text)
-	{
-		$parsed_text = (string) $text;
-		$uid = $bitfield = '';
-		$options = 0;
-		generate_text_for_storage($parsed_text, $uid, $bitfield, $options, true, true, true, false, false, false, true);
-
-		return generate_text_for_display($parsed_text, $uid, $bitfield, $options);
 	}
 }
