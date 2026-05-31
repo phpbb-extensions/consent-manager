@@ -154,6 +154,21 @@ class translation_manager_test extends \phpbb_database_test_case
 		);
 	}
 
+	public function test_rejects_oversized_translation_text()
+	{
+		$manager = $this->create_manager();
+		$errors = [];
+
+		self::assertFalse($manager->save_translations([
+			'en' => [
+				'banner_message' => str_repeat('a', \phpbb\consentmanager\service\translation_manager::MAX_TRANSLATION_LENGTH + 1),
+			],
+		], ['banner_message'], $errors));
+
+		self::assertNotEmpty($errors);
+		$this->assertSqlResultEquals([], 'SELECT translation_key FROM phpbb_consentmanager_translations');
+	}
+
 	public function test_custom_translations_are_cached_between_manager_instances()
 	{
 		$cache_store = [];

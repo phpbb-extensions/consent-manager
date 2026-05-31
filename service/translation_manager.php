@@ -15,6 +15,8 @@ use phpbb\language\language;
 
 class translation_manager
 {
+	public const MAX_TRANSLATION_LENGTH = 4000;
+
 	public const BANNER_FIELDS = [
 		'banner_title' => [
 			'fallback' => 'CONSENTMANAGER_DEFAULT_BANNER_TITLE',
@@ -204,6 +206,12 @@ class translation_manager
 				if ($translation_text === '' || $translation_text === $this->get_language_default($lang_iso, self::BANNER_FIELDS[$translation_key]['fallback']))
 				{
 					$this->delete_translation($translation_key, $lang_iso);
+					continue;
+				}
+
+				if (utf8_strlen($translation_text) > self::MAX_TRANSLATION_LENGTH)
+				{
+					$errors[] = $this->language->lang('ACP_CONSENTMANAGER_BANNER_TEXT_TOO_LONG', self::MAX_TRANSLATION_LENGTH);
 					continue;
 				}
 
