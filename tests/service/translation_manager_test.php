@@ -263,6 +263,21 @@ class translation_manager_test extends \phpbb_database_test_case
 		$this->assertSqlResultEquals([], 'SELECT translation_key FROM phpbb_consentmanager_translations');
 	}
 
+	public function test_ignores_unallowed_language_iso()
+	{
+		$manager = $this->create_manager();
+		$errors = [];
+
+		self::assertTrue($manager->save_translations([
+			'foo' => [
+				'banner_message' => 'Not installed language',
+			],
+		], ['banner_message'], $errors));
+
+		self::assertSame([], $errors);
+		$this->assertSqlResultEquals([], 'SELECT translation_key FROM phpbb_consentmanager_translations');
+	}
+
 	public function test_custom_translations_are_cached_between_manager_instances()
 	{
 		$cache_store = [];
