@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.0-a2 - 2026-06-01
+
+### Added
+
+- Consent banner text can now be edited and/or translated from the ACP under the new "Consent Text" section.
+
 ## 1.0.0-a1 - 2026-05-27
 
 ### Changed
