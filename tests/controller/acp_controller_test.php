@@ -270,6 +270,58 @@ class acp_controller_test extends \phpbb_test_case
 		$this->create_controller($request)->handle_consent_text();
 	}
 
+	public function test_handle_consent_text_validation_errors_reassigns_submitted_translations()
+	{
+		self::$valid_form = true;
+
+		$translations = [
+			'en' => [
+				'banner_message' => 'Broken [quote]message',
+			],
+		];
+
+		$this->translation_manager->expects(self::once())
+			->method('save_translations')
+			->willReturnCallback(function (array $submitted, array $allowed_keys, array &$errors) use ($translations) {
+				self::assertSame($translations, $submitted);
+				self::assertSame(['banner_title', 'banner_message', 'banner_subtext'], $allowed_keys);
+				$errors = ['Invalid banner text'];
+				return false;
+			});
+		$this->translation_manager->expects(self::once())
+			->method('get_banner_template_data')
+			->with($translations)
+			->willReturn([
+				'CONSENTMANAGER_BANNER_FIELDS' => [],
+				'CONSENTMANAGER_BANNER_LANGUAGES' => [],
+			]);
+		$this->acp_manager->expects(self::never())->method('log_admin_action');
+
+		$args = [self::callback(static function ($vars) {
+			return $vars['S_ERROR'] === true
+				&& $vars['ERROR_MSG'] === 'Invalid banner text'
+				&& $vars['U_ACTION'] === self::ACP_URL;
+		})];
+		$this->template->expects(self::once())
+			->method('assign_vars')
+			->with(...$args);
+
+		$this->create_controller($this->create_request_mock(['submit' => 1], ['translations' => $translations]))->handle_consent_text();
+	}
+
+	public function test_handle_consent_text_invalid_form_key_stops_before_processing()
+	{
+		self::$valid_form = false;
+
+		$this->translation_manager->expects(self::never())->method('save_translations');
+		$this->translation_manager->expects(self::never())->method('get_banner_template_data');
+		$this->acp_manager->expects(self::never())->method('log_admin_action');
+		$this->template->expects(self::never())->method('assign_vars');
+		$this->setExpectedTriggerError(E_USER_WARNING, $this->language->lang('FORM_INVALID'));
+
+		$this->create_controller($this->create_request_mock(['submit' => 1]))->handle_consent_text();
+	}
+
 	/**
 	 * @dataProvider handle_invalid_form_key_data
 	 */

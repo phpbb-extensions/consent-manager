@@ -71,6 +71,16 @@ class translation_manager_test extends \phpbb_database_test_case
 		return new \PHPUnit\DbUnit\DataSet\DefaultDataSet();
 	}
 
+	public function test_no_translations_fall_back()
+	{
+		$manager = $this->create_manager();
+
+		self::assertSame($this->language->lang('CONSENTMANAGER_DEFAULT_BANNER_TEXT'), $manager->get_translation('banner_message', 'CONSENTMANAGER_DEFAULT_BANNER_TEXT'));
+
+		$display = $manager->get_translation_for_display('banner_message', 'CONSENTMANAGER_DEFAULT_BANNER_TEXT');
+		self::assertStringContainsString($this->language->lang('CONSENTMANAGER_DEFAULT_BANNER_TEXT'), $display);
+	}
+
 	public function test_custom_translation_overrides_language_default_and_renders_bbcode()
 	{
 		$manager = $this->create_manager();
@@ -135,6 +145,21 @@ class translation_manager_test extends \phpbb_database_test_case
 		);
 	}
 
+	public function test_banner_template_data_prefers_submitted_values_after_errors()
+	{
+		$manager = $this->create_manager();
+		$submitted = [
+			'en' => [
+				'banner_title' => 'Submitted title',
+			],
+		];
+
+		$data = $manager->get_banner_template_data($submitted);
+
+		self::assertSame('Submitted title', $data['CONSENTMANAGER_BANNER_LANGUAGES'][0]['TRANSLATIONS'][0]['VALUE']);
+		self::assertSame('', $data['CONSENTMANAGER_BANNER_LANGUAGES'][0]['TRANSLATIONS'][1]['VALUE']);
+	}
+
 	public function test_four_byte_emoji_is_encoded_for_database_storage_and_decoded_for_editing()
 	{
 		$manager = $this->create_manager();
@@ -154,6 +179,29 @@ class translation_manager_test extends \phpbb_database_test_case
 		);
 	}
 
+	public function test_existing_translation_is_updated()
+	{
+		$manager = $this->create_manager();
+		$errors = [];
+
+		self::assertTrue($manager->save_translations([
+			'en' => [
+				'banner_title' => 'First title',
+			],
+		], ['banner_title'], $errors));
+		self::assertTrue($manager->save_translations([
+			'en' => [
+				'banner_title' => 'Second title',
+			],
+		], ['banner_title'], $errors));
+
+		self::assertSame('Second title', $manager->get_translation('banner_title', 'CONSENTMANAGER_DEFAULT_BANNER_TITLE', 'en'));
+		$this->assertSqlResultEquals(
+			[['translation_text' => 'Second title']],
+			"SELECT translation_text FROM phpbb_consentmanager_translations WHERE translation_key = 'banner_title' AND lang_iso = 'en'"
+		);
+	}
+
 	public function test_rejects_oversized_translation_text()
 	{
 		$manager = $this->create_manager();
@@ -167,6 +215,37 @@ class translation_manager_test extends \phpbb_database_test_case
 
 		self::assertNotEmpty($errors);
 		$this->assertSqlResultEquals([], 'SELECT translation_key FROM phpbb_consentmanager_translations');
+	}
+
+	public function test_parser_errors_abort_save()
+	{
+		$manager = $this->create_manager();
+		$errors = [];
+
+		self::assertFalse($manager->save_translations([
+			'en' => [
+				'banner_message' => '[img]https://example.com/image.png[/img]',
+			],
+		], ['banner_message'], $errors));
+
+		self::assertNotEmpty($errors);
+		$this->assertSqlResultEquals([], 'SELECT translation_key FROM phpbb_consentmanager_translations');
+	}
+
+	public function test_accepts_translation_text_at_maximum_length()
+	{
+		$manager = $this->create_manager();
+		$errors = [];
+		$text = str_repeat('a', \phpbb\consentmanager\service\translation_manager::MAX_TRANSLATION_LENGTH);
+
+		self::assertTrue($manager->save_translations([
+			'en' => [
+				'banner_message' => $text,
+			],
+		], ['banner_message'], $errors));
+
+		self::assertSame([], $errors);
+		self::assertSame($text, $manager->get_translation('banner_message', 'CONSENTMANAGER_DEFAULT_BANNER_TEXT', 'en'));
 	}
 
 	public function test_ignores_allowed_keys_outside_banner_field_definitions()
@@ -201,6 +280,26 @@ class translation_manager_test extends \phpbb_database_test_case
 
 		$cached_manager = $this->create_manager($cache_store);
 		self::assertSame('Cached message', $cached_manager->get_translation('banner_message', 'CONSENTMANAGER_DEFAULT_BANNER_TEXT', 'en'));
+	}
+
+	public function test_cached_translation_text_is_decoded_for_editing()
+	{
+		$cache_store = [
+			\phpbb\consentmanager\service\consent_cache::TRANSLATIONS_CACHE_KEY => [
+				'banner_title' => [
+					'en' => [
+						'translation_text' => 'We value your privacy &#128051;',
+						'translation_text_parsed' => '',
+						'translation_uid' => '',
+						'translation_bitfield' => '',
+						'translation_options' => 0,
+					],
+				],
+			],
+		];
+		$manager = $this->create_manager($cache_store);
+
+		self::assertSame('We value your privacy 🐳', $manager->get_translation('banner_title', 'CONSENTMANAGER_DEFAULT_BANNER_TITLE', 'en'));
 	}
 
 	protected function create_manager(array &$cache_store = [])
