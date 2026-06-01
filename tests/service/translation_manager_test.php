@@ -52,7 +52,6 @@ class translation_manager_test extends \phpbb_database_test_case
 		$this->insert_language('de', 'German');
 
 		$config = new \phpbb\config\config(['allow_nocensors' => false]);
-		set_config(null, null, null, $config);
 
 		$cache = new \phpbb_mock_cache();
 		$phpbb_container = new \phpbb_mock_container_builder();

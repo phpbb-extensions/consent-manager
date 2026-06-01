@@ -261,10 +261,7 @@ class media_manager_test extends \phpbb_test_case
 
 	protected function invoke_method($object, $method_name, array $arguments = [])
 	{
-		$method = new \ReflectionMethod($object, $method_name);
-		$method->setAccessible(true);
-
-		return $method->invokeArgs($object, $arguments);
+		return (new \ReflectionMethod($object, $method_name))->invokeArgs($object, $arguments);
 	}
 
 	protected function build_strip_internal_s9e_fixture()
