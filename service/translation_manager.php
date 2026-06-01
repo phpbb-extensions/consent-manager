@@ -237,7 +237,7 @@ class translation_manager
 		}
 
 		$this->translations = null;
-		$this->consent_cache->invalidate();
+		$this->consent_cache->invalidate_translations();
 
 		return true;
 	}

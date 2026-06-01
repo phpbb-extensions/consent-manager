@@ -68,6 +68,16 @@ class consent_cache
 	}
 
 	/**
+	 * Invalidate persistent Consent Manager integration cache entries.
+	 *
+	 * @return void
+	 */
+	public function invalidate_integrations()
+	{
+		$this->cache->destroy(self::INTEGRATIONS_CACHE_KEY);
+	}
+
+	/**
 	 * Return cached custom translations.
 	 *
 	 * @return array|null
@@ -92,13 +102,12 @@ class consent_cache
 	}
 
 	/**
-	 * Invalidate persistent Consent Manager cache entries.
+	 * Invalidate persistent Consent Manager translation cache entries.
 	 *
 	 * @return void
 	 */
-	public function invalidate()
+	public function invalidate_translations()
 	{
-		$this->cache->destroy(self::INTEGRATIONS_CACHE_KEY);
 		$this->cache->destroy(self::TRANSLATIONS_CACHE_KEY);
 	}
 }

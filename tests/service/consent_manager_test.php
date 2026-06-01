@@ -150,7 +150,7 @@ class consent_manager_test extends \phpbb_test_case
 		$this->get_manager([], '', null, $config_text, null, null, null, $consent_cache)
 			->get_configured_integrations();
 
-		$consent_cache->invalidate();
+		$consent_cache->invalidate_integrations();
 
 		$refreshed_manager = $this->getMockBuilder('\phpbb\consentmanager\service\consent_manager')
 			->setConstructorArgs($this->get_manager_constructor_args([], $config_text, new \phpbb_mock_event_dispatcher(), null, null, $this->language, $consent_cache))
