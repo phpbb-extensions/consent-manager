@@ -32,6 +32,7 @@ class frontend_test extends functional_base
 
 		$this->assertStringContainsString('consent-manager-root', $content);
 		$this->assertContainsLang('CONSENTMANAGER_SETTINGS_TITLE', $crawler->filter('#consent-manager-link')->text());
+		$this->assertSame(2, $crawler->filter('.consent-manager-policy-link')->count());
 		$this->assertSame(1, $payload['version']);
 		$this->assertSame('phpbb_consent_manager', $payload['storageKey']);
 		$this->assertSame($this->lang('CONSENTMANAGER_MEDIA_PLACEHOLDER'), $this->extract_media_placeholder_label($content));
