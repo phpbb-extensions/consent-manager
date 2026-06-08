@@ -61,7 +61,7 @@ class frontend_test extends functional_base
 		), json_decode(self::$client->getResponse()->getContent(), true));
 	}
 
-	public function test_log_endpoint_accepts_valid_anonymous_submission_without_persisting_it()
+	public function test_log_endpoint_persists_valid_anonymous_submission()
 	{
 		$payload = $this->fetch_frontend_payload();
 		$response = $this->post_log_request($payload, array('analytics', 'analytics', 'unknown'));
@@ -76,7 +76,7 @@ class frontend_test extends functional_base
 		$row = $this->db->sql_fetchrow($result);
 		$this->db->sql_freeresult($result);
 
-		$this->assertSame(0, (int) $row['log_count']);
+		$this->assertSame(1, (int) $row['log_count']);
 	}
 
 	public function test_log_endpoint_persists_valid_authenticated_submission()
