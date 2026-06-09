@@ -76,8 +76,6 @@
 }
 
 .consent-manager-policy-link {
-	font-weight: 700;
-	white-space: nowrap;
 	color: var(--consent-manager-color-link);
 }
 

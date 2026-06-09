@@ -1,7 +1,5 @@
 {% if S_CONSENTMANAGER_ENABLED %}
-{% set privacy_link %}
-	<a class="consent-manager-policy-link" href="{{ U_PRIVACY }}">{{ lang('PRIVACY') }}</a>
-{% endset %}
+{% set privacy_link %}<a class="consent-manager-policy-link" href="{{ U_PRIVACY }}">{{ lang('PRIVACY') }}</a>{% endset %}
 <div id="consent-manager-root" class="consent-manager-root">
 	<div class="consent-manager-banner" id="consent-manager-banner" role="region" aria-labelledby="consent-manager-banner-title" aria-describedby="consent-manager-banner-copy" hidden="hidden">
 		<h2 class="consent-manager-heading" id="consent-manager-banner-title">{{ CONSENTMANAGER_BANNER_TITLE }}</h2>
