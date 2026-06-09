@@ -17,11 +17,12 @@ Simple, GDPR-ready privacy controls with category-based consent, ACP management 
 
 - Consent banner and preference modal
 - Category-based consent options
-- Consent logging
+- Deferred script and iframe media loading
+- Consent logging with CSV export and deletion tools
 - Consent version resets
 - Google Consent Mode
-- ACP-managed categories, integrations, messaging, and audit logs
-- Extension integration API
+- ACP-managed categories, integrations, translations, and audit logs
+- PHP and JavaScript integration APIs
 
 ### Supported categories:
 
