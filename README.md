@@ -3,7 +3,7 @@
 # Consent Manager
 [![Build Status](https://github.com/phpbb-extensions/consent-manager/actions/workflows/tests.yml/badge.svg)](https://github.com/phpbb-extensions/consent-manager/actions)
 [![codecov](https://codecov.io/gh/phpbb-extensions/consent-manager/graph/badge.svg?token=IE2YWG6N9V)](https://codecov.io/gh/phpbb-extensions/consent-manager)
-![Stability](https://img.shields.io/badge/stability-beta-pink?logo=phpBB&logoColor=white)
+[![Latest Stable Version](https://poser.pugx.org/phpbb/consentmanager/v/stable)](https://www.phpbb.com/customise/db/extension/advanced_bbcode_box/)
 
 <p><i>Modern cookie consent for phpBB</i></p>
 <kbd><img src=".github/images/cm.png" width="566" height="208" alt="Consent Manager" style="width:566px; height:auto; max-width: 100%; display: block;"></kbd>
