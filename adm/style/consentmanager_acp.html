@@ -58,7 +58,7 @@
 									<strong>{{ category.label }}</strong>
 									<ul>
 								{% endif %}
-								<li style="font-size: 0.7rem">{{ service.label }} » <em>{{ service.id }}</em></li>
+								<li style="font-size: 0.7rem">{{ service.label|e('html') }} » <em>{{ service.id }}</em></li>
 							{% endif %}
 						{% endfor %}
 						{% if category_has_services %}

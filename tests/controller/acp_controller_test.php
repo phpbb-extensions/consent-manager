@@ -647,6 +647,52 @@ class acp_controller_test extends \phpbb_test_case
 		], $controller->captured_filters);
 	}
 
+	public function test_create_csv_response_streams_export_with_symfony_headers()
+	{
+		$filters = [
+			'user_id' => 42,
+			'consent_version' => 2,
+		];
+
+		$this->acp_manager->expects(self::once())
+			->method('stream_logs_csv')
+			->with(self::isType('resource'), $filters)
+			->willReturnCallback(static function ($handle) {
+				fputcsv($handle, ['anon-id', '2024-01-01T00:00:00Z', 2, 'necessary,analytics']);
+			});
+
+		$controller = new \phpbb\consentmanager\tests\controller\testable_acp_controller(
+			$this->language,
+			$this->acp_manager,
+			$this->translation_manager,
+			$this->create_request_mock(),
+			$this->template,
+			'',
+			'php'
+		);
+
+		$response = $controller->create_csv_response_for_test($filters);
+
+		self::assertInstanceOf('\Symfony\Component\HttpFoundation\StreamedResponse', $response);
+		self::assertSame('text/csv; charset=UTF-8', $response->headers->get('Content-Type'));
+		self::assertRegExp('/^attachment; filename="?consent_logs_\d{4}-\d{2}-\d{2}_\d{6}\.csv"?$/', $response->headers->get('Content-Disposition'));
+		self::assertTrue($response->headers->hasCacheControlDirective('no-cache'));
+		self::assertTrue($response->headers->hasCacheControlDirective('no-store'));
+		self::assertTrue($response->headers->hasCacheControlDirective('must-revalidate'));
+		self::assertSame('no-cache', $response->headers->get('Pragma'));
+		self::assertSame('0', $response->headers->get('Expires'));
+
+		ob_start();
+		$response->sendContent();
+		$content = ob_get_clean();
+
+		self::assertSame(
+			"\xEF\xBB\xBFanonymized_id,timestamp,consent_version,categories\n" .
+			"anon-id,2024-01-01T00:00:00Z,2,\"necessary,analytics\"\n",
+			$content
+		);
+	}
+
 	public function test_handle_logs_delete_confirmed_logs_and_triggers_success_notice()
 	{
 		self::$valid_form = true;
@@ -774,6 +820,11 @@ class testable_acp_controller extends \phpbb\consentmanager\controller\acp_contr
 	{
 		$this->captured_filters = $filters;
 		// Do not stream or exit — just record the filters for assertions
+	}
+
+	public function create_csv_response_for_test(array $filters)
+	{
+		return $this->create_csv_response($filters);
 	}
 }
 

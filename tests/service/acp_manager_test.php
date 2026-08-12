@@ -527,9 +527,9 @@ class acp_manager_test extends \phpbb_database_test_case
 	{
 		$log_manager = $this->create_log_manager(10, 'session');
 
-		for ($i = 0; $i < 5; $i++)
+		for ($i = 1; $i <= 5; $i++)
 		{
-			$log_manager->log_consent(array('necessary'), 1);
+			$log_manager->log_consent(array('necessary'), $i);
 		}
 
 		$handle = fopen('php://memory', 'wb+');

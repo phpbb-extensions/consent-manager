@@ -19,8 +19,6 @@
 	const categoriesById = {};
 	const deferredSelector = 'script[type="text/plain"][data-consent-category]';
 	const deferredEmbedSelector = '[data-consent-media-container][data-consent-category]';
-	const googleConsentMode = payload.googleConsentMode || {};
-	const googleConsentTypes = googleConsentMode.types || {};
 	let requiredCategories = [];
 	let enabledCategories = [];
 	let optionalCategories = [];
@@ -31,6 +29,8 @@
 		return;
 	}
 
+	const googleConsentMode = payload.googleConsentMode || {};
+	const googleConsentTypes = googleConsentMode.types || {};
 	const mediaPlaceholderLabel = typeof lang.mediaPlaceholderLabel === 'string' ? lang.mediaPlaceholderLabel : '';
 
 	function isArray(value)
@@ -101,6 +101,11 @@
 	function setCookie(name, value, maxAge)
 	{
 		let cookie = name + '=' + encodeURIComponent(value) + '; path=/; SameSite=Lax';
+
+		if (window.location.protocol === 'https:')
+		{
+			cookie += '; Secure';
+		}
 
 		if (typeof maxAge === 'number')
 		{

@@ -16,6 +16,15 @@ use phpbb\user;
 
 class log_manager
 {
+	/** Seconds during which an unchanged decision is considered a duplicate. */
+	public const DUPLICATE_WINDOW = 300;
+
+	/** Maximum accepted decisions per anonymized subject during the rate-limit window. */
+	public const RATE_LIMIT_MAX = 20;
+
+	/** Rate-limit window in seconds. */
+	public const RATE_LIMIT_WINDOW = 3600;
+
 	/** @var config */
 	protected $config;
 
@@ -50,19 +59,72 @@ class log_manager
 	 * @param array $categories Accepted category ids
 	 * @param int   $version Consent version
 	 *
-	 * @return void
+	 * @return bool True when a row was inserted, false when suppressed
 	 */
 	public function log_consent(array $categories, $version)
 	{
+		$anonymized_id = $this->get_anonymized_subject();
+		$accepted_categories = json_encode(array_values($categories));
+		$now = time();
+
+		if ($this->should_suppress_submission($anonymized_id, (int) $version, $accepted_categories, $now))
+		{
+			return false;
+		}
+
 		$record = [
-			'anonymized_id' => $this->get_anonymized_subject(),
+			'anonymized_id' => $anonymized_id,
 			'consent_version' => (int) $version,
-			'accepted_categories' => json_encode(array_values($categories)),
-			'consent_time' => time(),
+			'accepted_categories' => $accepted_categories,
+			'consent_time' => $now,
 		];
 
 		$sql = 'INSERT INTO ' . $this->consent_logs_table . ' ' . $this->db->sql_build_array('INSERT', $record);
 		$this->db->sql_query($sql);
+
+		return true;
+	}
+
+	/**
+	 * Suppress rapid duplicates and excessive submissions from one subject.
+	 *
+	 * @param string $anonymized_id Anonymized user or guest-session identifier
+	 * @param int    $version Consent version
+	 * @param string $accepted_categories JSON-encoded normalized categories
+	 * @param int    $now Current Unix timestamp
+	 *
+	 * @return bool
+	 */
+	protected function should_suppress_submission($anonymized_id, $version, $accepted_categories, $now)
+	{
+		$sql = 'SELECT consent_version, accepted_categories, consent_time
+			FROM ' . $this->consent_logs_table . "
+			WHERE anonymized_id = '" . $this->db->sql_escape($anonymized_id) . "'
+				AND consent_time >= " . ((int) $now - self::RATE_LIMIT_WINDOW) . '
+			ORDER BY consent_log_id DESC';
+		$result = $this->db->sql_query_limit($sql, self::RATE_LIMIT_MAX);
+		$count = 0;
+		$latest = null;
+
+		while ($row = $this->db->sql_fetchrow($result))
+		{
+			if ($latest === null)
+			{
+				$latest = $row;
+			}
+			$count++;
+		}
+		$this->db->sql_freeresult($result);
+
+		if ($latest !== null
+			&& (int) $latest['consent_time'] >= (int) $now - self::DUPLICATE_WINDOW
+			&& (int) $latest['consent_version'] === (int) $version
+			&& $latest['accepted_categories'] === $accepted_categories)
+		{
+			return true;
+		}
+
+		return $count >= self::RATE_LIMIT_MAX;
 	}
 
 	/**

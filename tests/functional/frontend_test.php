@@ -42,6 +42,32 @@ class frontend_test extends functional_base
 		$this->assertStringContainsString('/consent/log', $payload['logEndpoint']);
 	}
 
+	public function test_frontend_escapes_integration_label_and_description()
+	{
+		$label = '<script>alert(1)</script>';
+		$description = '<img src=x onerror=alert(2)>';
+		$integrations = json_encode(array(array(
+			'id' => 'board.analytics',
+			'category' => 'analytics',
+			'label' => $label,
+			'description' => $description,
+			'src' => '/analytics.js',
+		)));
+
+		$this->db->sql_query('UPDATE ' . CONFIG_TEXT_TABLE . "
+			SET config_value = '" . $this->db->sql_escape($integrations) . "'
+			WHERE config_name = 'consentmanager_integrations'");
+		$this->purge_cache();
+
+		self::request('GET', 'index.php');
+		$content = self::get_content();
+
+		$this->assertStringNotContainsString($label, $content);
+		$this->assertStringNotContainsString($description, $content);
+		$this->assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt;', $content);
+		$this->assertStringContainsString('&lt;img src=x onerror=alert(2)&gt;', $content);
+	}
+
 	public function test_log_endpoint_rejects_invalid_json_payload()
 	{
 		$payload = $this->fetch_frontend_payload();

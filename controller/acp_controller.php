@@ -16,6 +16,8 @@ use phpbb\language\language;
 use phpbb\request\request;
 use phpbb\request\request_interface;
 use phpbb\template\template;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class acp_controller
 {
@@ -296,19 +298,30 @@ class acp_controller
 			ob_end_clean();
 		}
 
-		header('Content-Type: text/csv; charset=UTF-8');
-		header('Content-Disposition: attachment; filename="consent_logs_' . gmdate('Y-m-d_His') . '.csv"');
-		header('Cache-Control: no-cache, no-store, must-revalidate');
-		header('Pragma: no-cache');
-		header('Expires: 0');
+		$this->create_csv_response($filters)->send();
 
-		$handle = fopen('php://output', 'wb');
-		fwrite($handle, "\xEF\xBB\xBF"); // UTF-8 BOM for Excel compatibility
-		fputcsv($handle, ['anonymized_id', 'timestamp', 'consent_version', 'categories']);
-		$this->acp_manager->stream_logs_csv($handle, $filters);
-		fclose($handle);
+		garbage_collection();
+		exit_handler();
+	}
 
-		exit;
+	protected function create_csv_response(array $filters)
+	{
+		$filename = 'consent_logs_' . gmdate('Y-m-d_His') . '.csv';
+		$response = new StreamedResponse(function () use ($filters) {
+			$handle = fopen('php://output', 'wb');
+			fwrite($handle, "\xEF\xBB\xBF"); // UTF-8 BOM for Excel compatibility
+			fputcsv($handle, ['anonymized_id', 'timestamp', 'consent_version', 'categories']);
+			$this->acp_manager->stream_logs_csv($handle, $filters);
+			fclose($handle);
+		});
+
+		$response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+		$response->headers->set('Content-Disposition', $response->headers->makeDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, $filename));
+		$response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
+		$response->headers->set('Pragma', 'no-cache');
+		$response->headers->set('Expires', '0');
+
+		return $response;
 	}
 
 	protected function get_logs_form_data()

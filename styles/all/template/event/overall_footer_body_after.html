@@ -28,7 +28,7 @@
 						<div class="consent-manager-category-services">
 							<ul>
 								{% for service in cat.CONSENTMANAGER_SERVICES %}
-								<li><strong>{{ service.LABEL }}</strong>{% if service.DESCRIPTION %}{{ lang('COLON')}} {{ service.DESCRIPTION }}{% endif %}</li>
+								<li><strong>{{ service.LABEL|e('html') }}</strong>{% if service.DESCRIPTION %}{{ lang('COLON')}} {{ service.DESCRIPTION|e('html') }}{% endif %}</li>
 								{% endfor %}
 							</ul>
 						</div>
