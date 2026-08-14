@@ -1,7 +1,9 @@
-.consent-manager-root {
+.consent-manager-root,
+.consent-manager-noscript {
 	--consent-manager-color-text: #111827;
 	--consent-manager-color-text-muted: #475569;
 	--consent-manager-color-link: #105289;
+	--consent-manager-color-link-hover: #0c3d66;
 	--consent-manager-color-surface: #ffffff;
 	--consent-manager-color-border: rgba(18, 41, 64, 0.16);
 	--consent-manager-color-border-subtle: #e2e8f0;
@@ -28,6 +30,7 @@
 .consent-manager-banner,
 .consent-manager-modal-panel,
 .consent-manager-noscript {
+	font-family: Verdana, Helvetica, Arial, sans-serif;
 	font-size: var(--consent-manager-font-size);
 	line-height: 1.2;
 	background: var(--consent-manager-color-surface);
@@ -70,13 +73,26 @@
 }
 
 .consent-manager-copy {
+	font-size: 1.1em;
 	line-height: 1.5;
 	color: var(--consent-manager-color-text-muted);
 	margin: 0;
 }
 
-.consent-manager-policy-link {
+.consent-manager-policy-link,
+.consent-manager-policy-link:visited {
 	color: var(--consent-manager-color-link);
+	direction: inherit;
+	display: inline;
+	unicode-bidi: normal;
+	text-decoration: none;
+}
+
+.consent-manager-policy-link:hover,
+.consent-manager-policy-link:focus,
+.consent-manager-policy-link:active {
+	color: var(--consent-manager-color-link-hover);
+	text-decoration: underline;
 }
 
 .consent-manager-actions {
@@ -88,6 +104,7 @@
 
 .consent-manager-button {
 	font-family: Verdana, Helvetica, Arial, sans-serif;
+	font-size: 1em;
 	font-weight: 600;
 	line-height: 1.2;
 	text-transform: none;
@@ -110,12 +127,14 @@
 
 .consent-manager-button:hover,
 .consent-manager-button:focus {
+	outline: none;
 	text-decoration: none;
 	background: var(--consent-manager-color-button-surface-hover);
 	color: var(--consent-manager-color-text);
 }
 
 .consent-manager-button:focus-visible,
+.consent-manager-policy-link:focus-visible,
 .consent-manager-link:focus-visible,
 .consent-manager-toggle input:focus-visible {
 	outline: 3px solid #2563eb;
@@ -181,6 +200,7 @@
 }
 
 .consent-manager-category-description {
+	font-size: 1.1em;
 	color: var(--consent-manager-color-text-muted);
 	margin: 0.25rem 0 0;
 }
@@ -191,7 +211,17 @@
 }
 
 .consent-manager-category-services ul {
+	list-style: disc outside;
 	margin: 0.5rem 0 0;
+	padding: 0;
+}
+
+.consent-manager-category-services li {
+	display: list-item;
+}
+
+.consent-manager-category-services strong {
+	font-weight: bold;
 }
 
 .consent-manager-toggle {
@@ -199,6 +229,13 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 0.5rem;
+	padding: 0;
+	cursor: default;
+}
+
+.consent-manager-toggle input {
+	margin: 0;
+	padding: 0;
 }
 
 .consent-manager-noscript {
@@ -218,6 +255,8 @@
 	--consent-manager-media-placeholder-text: #475569;
 	--consent-manager-media-placeholder-surface: #f8fafc;
 	--consent-manager-media-placeholder-border: #e2e8f0;
+	--consent-manager-media-placeholder-link: #105289;
+	--consent-manager-media-placeholder-link-hover: #0c3d66;
 	display: block;
 	margin: 0.75rem 0;
 }
@@ -236,10 +275,28 @@
 	overflow-wrap: anywhere;
 }
 
-[data-consent-media-placeholder] a {
+[data-consent-media-placeholder] a,
+[data-consent-media-placeholder] a:visited {
+	color: var(--consent-manager-media-placeholder-link);
+	direction: inherit;
+	display: inline;
+	unicode-bidi: normal;
+	text-decoration: none;
 	word-break: break-word;
 	max-width: 100%;
 	overflow-wrap: anywhere;
+}
+
+[data-consent-media-placeholder] a:hover,
+[data-consent-media-placeholder] a:focus,
+[data-consent-media-placeholder] a:active {
+	color: var(--consent-manager-media-placeholder-link-hover);
+	text-decoration: underline;
+}
+
+[data-consent-media-placeholder] a:focus-visible {
+	outline: 3px solid #2563eb;
+	outline-offset: 2px;
 }
 
 [data-consent-media-placeholder][hidden],
