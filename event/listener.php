@@ -63,7 +63,18 @@ class listener implements EventSubscriberInterface
 			'core.text_formatter_s9e_configure_after' => [['configure_iframe_embeds', -10]],
 			'core.text_formatter_s9e_renderer_setup' => 'configure_iframe_renderer',
 			'core.page_header_after' => 'inject_frontend',
+			'core.ucp_delete_cookies' => 'clear_browser_storage',
 		];
+	}
+
+	/**
+	 * Mark Consent Manager browser storage for deletion after confirmation.
+	 *
+	 * @return void
+	 */
+	public function clear_browser_storage()
+	{
+		$this->template->assign_var('S_CONSENTMANAGER_CLEAR_STORAGE', true);
 	}
 
 	/**

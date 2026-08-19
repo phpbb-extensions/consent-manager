@@ -22,8 +22,8 @@ use Twig\Error\LoaderError;
 
 class consent_manager implements consent_manager_interface
 {
-	public const STORAGE_KEY = 'phpbb_consent_manager';
-	public const COOKIE_NAME = 'phpbb_consent_manager';
+	public const STORAGE_KEY = 'consent_manager';
+	public const COOKIE_NAME = 'consent_manager';
 
 	/** @var consent_cache */
 	protected $consent_cache;
@@ -314,6 +314,8 @@ class consent_manager implements consent_manager_interface
 		return [
 			'storageKey' => $this->get_storage_key(),
 			'cookieName' => $this->get_cookie_name(),
+			'cookiePath' => $this->config['cookie_path'],
+			'cookieDomain' => $this->get_cookie_domain(),
 			'version' => $this->get_version(),
 			'requiredCategories' => $this->get_required_category_ids($categories),
 			'enabledCategories' => $this->get_enabled_category_ids($categories),
@@ -542,7 +544,7 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function get_storage_key()
 	{
-		return self::STORAGE_KEY;
+		return $this->get_prefixed_storage_name(self::STORAGE_KEY);
 	}
 
 	/**
@@ -552,7 +554,7 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function get_cookie_name()
 	{
-		return self::COOKIE_NAME;
+		return $this->get_prefixed_storage_name(self::COOKIE_NAME);
 	}
 
 	/**
@@ -645,7 +647,7 @@ class consent_manager implements consent_manager_interface
 		$this->server_consent_state_loaded = true;
 		$this->server_consent_state = null;
 
-		$raw = $this->request->raw_variable(self::COOKIE_NAME, '', request_interface::COOKIE);
+		$raw = $this->request->raw_variable($this->get_cookie_name(), '', request_interface::COOKIE);
 		if (!is_string($raw) || $raw === '')
 		{
 			return null;
@@ -666,6 +668,30 @@ class consent_manager implements consent_manager_interface
 		];
 
 		return $this->server_consent_state;
+	}
+
+	/**
+	 * Prefix browser storage names consistently with phpBB cookies.
+	 *
+	 * @param string $name Unprefixed storage name
+	 *
+	 * @return string
+	 */
+	protected function get_prefixed_storage_name($name)
+	{
+		return $this->config['cookie_name'] . '_' . $name;
+	}
+
+	/**
+	 * Return the cookie domain phpBB will use when deleting board cookies.
+	 *
+	 * @return string
+	 */
+	protected function get_cookie_domain()
+	{
+		$domain = $this->config['cookie_domain'];
+
+		return (!$domain || $domain === '127.0.0.1' || strpos($domain, '.') === false) ? '' : $domain;
 	}
 
 	/**

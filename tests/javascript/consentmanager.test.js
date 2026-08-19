@@ -13,6 +13,8 @@ function createPayload(overrides) {
 		version: '2026-04-28',
 		storageKey: 'phpbb-consent-state',
 		cookieName: 'phpbb_consent_state',
+		cookiePath: '/',
+		cookieDomain: '',
 		logEndpoint: '/app.php/consent/log',
 		logHash: 'test-hash',
 		categories: [
@@ -114,6 +116,7 @@ function setupConsentManager(options) {
 	const { window } = dom;
 	const requests = [];
 	const gtagCalls = settings.gtagCalls || [];
+	let ajaxSuccessCallback = null;
 
 	Object.defineProperty(window.document, 'readyState', {
 		configurable: true,
@@ -175,6 +178,17 @@ function setupConsentManager(options) {
 		window.document.cookie = payload.cookieName + '=' + encodeURIComponent(JSON.stringify(settings.cookieState));
 	}
 
+	if (settings.withJquery) {
+		window.jQuery = function() {
+			return {
+				ajaxSuccess: function(callback) {
+					ajaxSuccessCallback = callback;
+				}
+			};
+		};
+		window.phpbbConsentManagerDeleteCookiesUrl = '/delete_cookies';
+	}
+
 	if (!settings.withoutPayload) {
 		window.phpbbConsentManagerPayload = payload;
 	}
@@ -192,7 +206,10 @@ function setupConsentManager(options) {
 		payload,
 		requests,
 		gtagCalls,
-		jsdomErrors
+		jsdomErrors,
+		triggerAjaxSuccess: function(url, response) {
+			ajaxSuccessCallback({}, {}, { url }, response);
+		}
 	};
 }
 
@@ -207,6 +224,22 @@ test('exits cleanly when payload is missing', () => {
 
 	expect(window.consentManager).toBeUndefined();
 	expect(jsdomErrors).toEqual([]);
+});
+
+test('successful AJAX cookie deletion clears consent browser storage', () => {
+	const storedState = createState([ 'necessary', 'analytics' ], '2026-04-28T00:00:00.000Z');
+	const { window, document, payload, triggerAjaxSuccess } = setupConsentManager({
+		localState: storedState,
+		withJquery: true
+	});
+
+	triggerAjaxSuccess('/delete_cookies?sid=changed-by-confirmation', {
+		REFRESH_DATA: { url: '/', time: 3 }
+	});
+
+	expect(window.localStorage.getItem(payload.storageKey)).toBeNull();
+	expect(getCookieValue(document, payload.cookieName)).toBe('');
+	expect(window.consentManager.getState()).toEqual(storedState);
 });
 
 test('prefers the newest stored state and synchronizes cookie and local storage', () => {

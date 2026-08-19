@@ -100,7 +100,12 @@
 
 	function setCookie(name, value, maxAge)
 	{
-		let cookie = name + '=' + encodeURIComponent(value) + '; path=/; SameSite=Lax';
+		let cookie = name + '=' + encodeURIComponent(value) + '; path=' + payload.cookiePath + '; SameSite=Lax';
+
+		if (payload.cookieDomain)
+		{
+			cookie += '; domain=' + payload.cookieDomain;
+		}
 
 		if (window.location.protocol === 'https:')
 		{
@@ -273,6 +278,39 @@
 		}
 
 		return state;
+	}
+
+	function sameRequestUrl(left, right)
+	{
+		if (!left || !right)
+		{
+			return false;
+		}
+
+		const leftLink = document.createElement('a');
+		const rightLink = document.createElement('a');
+		leftLink.href = left;
+		rightLink.href = right;
+
+		return leftLink.pathname === rightLink.pathname;
+	}
+
+	function bindDeleteCookiesCleanup()
+	{
+		if (!window.jQuery || !window.phpbbConsentManagerDeleteCookiesUrl)
+		{
+			return;
+		}
+
+		window.jQuery(document).ajaxSuccess(function(event, request, settings, response) {
+			if (sameRequestUrl(settings.url, window.phpbbConsentManagerDeleteCookiesUrl)
+				&& response
+				&& typeof response.S_CONFIRM_ACTION === 'undefined'
+				&& response.REFRESH_DATA)
+			{
+				removeStoredState();
+			}
+		});
 	}
 
 	function unique(items)
@@ -1190,6 +1228,7 @@
 	};
 
 	window.consentManager = api;
+	bindDeleteCookiesCleanup();
 
 	applyGoogleConsentMode();
 

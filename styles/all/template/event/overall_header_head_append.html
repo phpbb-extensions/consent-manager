@@ -9,6 +9,7 @@
 		const googleConsentTypes = googleConsentMode.types || {};
 
 		window.phpbbConsentManagerPayload = payload;
+		window.phpbbConsentManagerDeleteCookiesUrl = '{{ U_DELETE_COOKIES|e('js') }}';
 		window.phpbbConsentManagerLang = {
 			mediaPlaceholderLabel: '{{ lang('CONSENTMANAGER_MEDIA_PLACEHOLDER')|e('js') }}'
 		};
@@ -43,6 +44,16 @@
 
 			return '';
 		}
+
+		{% if S_CONSENTMANAGER_CLEAR_STORAGE %}
+		try
+		{
+			window.localStorage.removeItem(payload.storageKey);
+		}
+		catch (error)
+		{
+		}
+		{% endif %}
 
 		function loadState()
 		{

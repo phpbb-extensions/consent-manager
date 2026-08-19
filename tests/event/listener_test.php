@@ -51,7 +51,18 @@ class listener_test extends \phpbb_test_case
 			'core.text_formatter_s9e_configure_after' => [['configure_iframe_embeds', -10]],
 			'core.text_formatter_s9e_renderer_setup' => 'configure_iframe_renderer',
 			'core.page_header_after' => 'inject_frontend',
+			'core.ucp_delete_cookies' => 'clear_browser_storage',
 		], \phpbb\consentmanager\event\listener::getSubscribedEvents());
+	}
+
+	public function test_clear_browser_storage_assigns_template_flag()
+	{
+		$template = $this->createMock('\phpbb\template\template');
+		$template->expects(self::once())
+			->method('assign_var')
+			->with('S_CONSENTMANAGER_CLEAR_STORAGE', true);
+
+		$this->create_listener(null, null, $template)->clear_browser_storage();
 	}
 
 	public function test_configure_iframe_embeds_delegates_to_media_manager()

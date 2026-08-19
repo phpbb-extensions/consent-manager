@@ -61,14 +61,17 @@ class consent_manager_test extends \phpbb_test_case
 	public function test_public_metadata_methods()
 	{
 		$manager = $this->get_manager(array(
+			'cookie_name' => 'phpbb3_test',
+			'cookie_path' => '/forum',
+			'cookie_domain' => '.example.com',
 			'consentmanager_analytics_enabled' => 1,
 			'consentmanager_marketing_enabled' => 0,
 			'consentmanager_media_enabled' => 1,
 			'consentmanager_consent_version' => 7,
 		));
 
-		self::assertSame('phpbb_consent_manager', $manager->get_storage_key());
-		self::assertSame('phpbb_consent_manager', $manager->get_cookie_name());
+		self::assertSame('phpbb3_test_consent_manager', $manager->get_storage_key());
+		self::assertSame('phpbb3_test_consent_manager', $manager->get_cookie_name());
 		self::assertSame(7, $manager->get_version());
 		self::assertTrue($manager->is_supported_category('analytics'));
 		self::assertTrue($manager->is_supported_category('media'));
@@ -599,12 +602,19 @@ class consent_manager_test extends \phpbb_test_case
 		});
 
 		$manager = $this->get_manager(array(
+			'cookie_name' => 'phpbb3_payload',
+			'cookie_path' => '/board',
+			'cookie_domain' => '.example.com',
 			'consentmanager_marketing_enabled' => 0,
 			'consentmanager_consent_version' => 7,
 		), $this->get_submitted_integrations_json(), $dispatcher);
 
 		$payload = $manager->build_frontend_payload('/app.php/consent/log', 'deadbeef');
 
+		self::assertSame('phpbb3_payload_consent_manager', $payload['storageKey']);
+		self::assertSame('phpbb3_payload_consent_manager', $payload['cookieName']);
+		self::assertSame('/board', $payload['cookiePath']);
+		self::assertSame('.example.com', $payload['cookieDomain']);
 		self::assertSame(array('necessary'), $payload['requiredCategories']);
 		self::assertSame(array('necessary', 'analytics', 'media'), $payload['enabledCategories']);
 		self::assertSame(array('analytics', 'media'), $payload['optionalCategories']);
@@ -961,7 +971,7 @@ class consent_manager_test extends \phpbb_test_case
 	public function test_has_server_consent_reuses_cached_cookie_state()
 	{
 		$raw_variable_args = [
-			\phpbb\consentmanager\service\consent_manager::COOKIE_NAME,
+			'phpbb3_test_consent_manager',
 			'',
 			\phpbb\request\request_interface::COOKIE,
 		];
@@ -975,6 +985,7 @@ class consent_manager_test extends \phpbb_test_case
 			]));
 
 		$manager = $this->get_manager([
+			'cookie_name' => 'phpbb3_test',
 			'consentmanager_consent_version' => 3,
 		], '', null, null, null, $request);
 
@@ -1125,6 +1136,9 @@ class consent_manager_test extends \phpbb_test_case
 		}
 
 		$config = new \phpbb\config\config(array_merge(array(
+			'cookie_name' => 'phpbb3_test',
+			'cookie_path' => '/',
+			'cookie_domain' => '',
 			'consentmanager_analytics_enabled' => 1,
 			'consentmanager_marketing_enabled' => 1,
 			'consentmanager_media_enabled' => 1,
@@ -1196,7 +1210,7 @@ class consent_manager_test extends \phpbb_test_case
 		$request = $this->createMock('\phpbb\request\request_interface');
 		$request->method('raw_variable')
 			->willReturnCallback(function ($name, $default, $super_global = null) use ($cookie_value) {
-				if ($name === \phpbb\consentmanager\service\consent_manager::COOKIE_NAME && $super_global === \phpbb\request\request_interface::COOKIE)
+				if ($name === 'phpbb3_test_consent_manager' && $super_global === \phpbb\request\request_interface::COOKIE)
 				{
 					return $cookie_value;
 				}
