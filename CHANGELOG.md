@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.1 - 2026-09-03
+
+### Changed
+
+- Consent cookie and browser storage names now use the board's configured cookie prefix to prevent conflicts between phpBB installations.
+- Consent cookies now respect the board's configured cookie path and domain.
+- Improved the Privacy Policy link wording and presentation in the consent interface.
+- Manual integrations now require HTTPS for remote scripts. Relative script URLs remain supported.
+
+### Fixed
+
+- Fixed phpBB and third-party style rules overriding Consent Manager typography, buttons, links, service lists, toggles, and focus states.
+- phpBB's “Delete cookies” action now also removes Consent Manager's cookie and local browser storage.
+- Fixed custom BBCodes containing iframes causing parser rebuilds and forum pages to fail when embedded media consent was enabled.
+- Guest consent log limits now remain effective when browsers do not retain session cookies.
+- Consent log identifiers now remain stable when phpBB refreshes its random seed, preserving username-filtered exports and deletions.
+- Fixed consent deferral for iframe sources nested inside conditional XSL templates, such as Apple Podcasts embeds.
+
 ## 1.0.0 - 2026-06-20
 
 - First official release of Consent Manager.
