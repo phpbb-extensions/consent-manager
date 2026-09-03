@@ -42,13 +42,13 @@
 		<dl>
 			<dt><span>{{ lang('ACP_CONSENTMANAGER_REGISTRATIONS_EXPLAIN') }}</span></dt>
 			<dd>
-				{% set services = S_CONSENTMANAGER_MEDIA ? CONSENTMANAGER_SERVICES|merge([{'category': 'media', 'label': lang('CONSENTMANAGER_IFRAMES'), 'id': 'phpbb.consentmanager'}]) : CONSENTMANAGER_SERVICES %}
+				{% set services = S_CONSENTMANAGER_MEDIA ? CONSENTMANAGER_SERVICES|merge([{'category': 'media', 'label': lang('ACP_CONSENTMANAGER_IFRAMES'), 'id': 'phpbb.consentmanager'}]) : CONSENTMANAGER_SERVICES %}
 				{% if services %}
 					{% for category in [
-						{ id: 'necessary', label: lang('CONSENTMANAGER_CATEGORY_NECESSARY') },
-						{ id: 'analytics', label: lang('CONSENTMANAGER_CATEGORY_ANALYTICS') },
-						{ id: 'marketing', label: lang('CONSENTMANAGER_CATEGORY_MARKETING') },
-						{ id: 'media', label: lang('CONSENTMANAGER_CATEGORY_MEDIA') }
+						{ id: 'necessary', label: lang('ACP_CONSENTMANAGER_CATEGORY_NECESSARY') },
+						{ id: 'analytics', label: lang('ACP_CONSENTMANAGER_CATEGORY_ANALYTICS') },
+						{ id: 'marketing', label: lang('ACP_CONSENTMANAGER_CATEGORY_MARKETING') },
+						{ id: 'media', label: lang('ACP_CONSENTMANAGER_CATEGORY_MEDIA') }
 					] %}
 						{% set category_has_services = false %}
 						{% for service in services %}

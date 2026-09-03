@@ -54,11 +54,12 @@ $lang = array_merge($lang, [
 	'ACP_CONSENTMANAGER_BANNER_FALLBACK_EXPLAIN'	=> 'Leave a field blank to remove the custom translation and use Consent Manager’s default text for that language.',
 	'ACP_CONSENTMANAGER_BANNER_TEXT_TOO_LONG'		=> 'Consent text values must be %d characters or fewer.',
 	'ACP_CONSENTMANAGER_BANNER_UPDATED'				=> 'Consent text updated.',
-	'CONSENTMANAGER_CATEGORY_NECESSARY'				=> 'Necessary',
-	'CONSENTMANAGER_CATEGORY_ANALYTICS'				=> 'Analytics',
-	'CONSENTMANAGER_CATEGORY_MARKETING'				=> 'Marketing',
-	'CONSENTMANAGER_CATEGORY_MEDIA'					=> 'Media',
-	'CONSENTMANAGER_IFRAMES'						=> 'BBCode iframe embeds',
+	'ACP_CONSENTMANAGER_LANGUAGE'					=> 'Language',
+	'ACP_CONSENTMANAGER_CATEGORY_NECESSARY'			=> 'Necessary',
+	'ACP_CONSENTMANAGER_CATEGORY_ANALYTICS'			=> 'Analytics',
+	'ACP_CONSENTMANAGER_CATEGORY_MARKETING'			=> 'Marketing',
+	'ACP_CONSENTMANAGER_CATEGORY_MEDIA'				=> 'Media',
+	'ACP_CONSENTMANAGER_IFRAMES'					=> 'BBCode iframe embeds',
 
 	// Consent logs
 	'ACP_CONSENTMANAGER_EXPORT_EXPLAIN'				=> 'Download a CSV file of stored consent log records or permanently delete matching records from the database. All fields are optional; leave them blank to work with the full log.',
