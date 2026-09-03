@@ -386,6 +386,11 @@ test('registerScript blocks unsafe sources and executes safe inline scripts', ()
 		src: 'javascript:alert(1)'
 	})).toBe(false);
 
+	expect(window.consentManager.registerScript('insecure', {
+		category: 'analytics',
+		src: 'http://cdn.example.com/script.js'
+	})).toBe(false);
+
 	expect(window.consentManager.registerScript('safe-inline', {
 		category: 'analytics',
 		inline: 'window.safeInlineLoaded = true;'
@@ -393,6 +398,12 @@ test('registerScript blocks unsafe sources and executes safe inline scripts', ()
 
 	expect(window.safeInlineLoaded).toBe(true);
 	expect(document.head.querySelectorAll('script[src]').length).toBe(0);
+
+	expect(window.consentManager.registerScript('safe-relative', {
+		category: 'analytics',
+		src: '/assets/analytics.js'
+	})).toBe(true);
+	expect(document.head.querySelector('script[src="/assets/analytics.js"]')).not.toBeNull();
 });
 
 test('processes deferred consent scripts and copies only safe attributes', () => {

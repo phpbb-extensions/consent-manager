@@ -575,11 +575,9 @@
 			return false;
 		}
 
-		const link = document.createElement('a');
-		link.href = src;
-		const protocol = (link.protocol || '').toLowerCase();
+		const scheme = src.match(/^([a-z][a-z0-9+.-]*):/i);
 
-		return protocol === '' || protocol === 'http:' || protocol === 'https:';
+		return !scheme || scheme[1].toLowerCase() === 'https';
 	}
 
 	function isSafeEmbedSource(src)
