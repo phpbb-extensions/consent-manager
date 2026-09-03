@@ -49,10 +49,11 @@ class log_manager_test extends \phpbb_database_test_case
 		$this->assertSqlResultEquals(array(
 			array(
 				'anonymized_id' => hash_hmac('sha256', 'u:42', 'random-seed'),
+				'throttle_id' => hash_hmac('sha256', 'u:42', 'random-seed'),
 				'consent_version' => '3',
 				'accepted_categories' => '["necessary","analytics"]',
 			),
-		), 'SELECT anonymized_id, consent_version, accepted_categories
+		), 'SELECT anonymized_id, throttle_id, consent_version, accepted_categories
 			FROM phpbb_consentmanager_logs');
 	}
 
@@ -64,10 +65,11 @@ class log_manager_test extends \phpbb_database_test_case
 		$this->assertSqlResultEquals(array(
 			array(
 				'anonymized_id' => hash_hmac('sha256', 's:guest-session', 'random-seed'),
+				'throttle_id' => hash_hmac('sha256', 'ip:127.0.0.1', 'random-seed'),
 				'consent_version' => '9',
 				'accepted_categories' => '["necessary"]',
 			),
-		), 'SELECT anonymized_id, consent_version, accepted_categories
+		), 'SELECT anonymized_id, throttle_id, consent_version, accepted_categories
 			FROM phpbb_consentmanager_logs');
 	}
 
@@ -77,6 +79,16 @@ class log_manager_test extends \phpbb_database_test_case
 
 		self::assertTrue($manager->log_consent(array('necessary'), 1));
 		self::assertFalse($manager->log_consent(array('necessary'), 1));
+		$this->assertLogCount(1);
+	}
+
+	public function test_log_consent_suppresses_guest_duplicate_across_sessions_from_same_ip()
+	{
+		$first_manager = $this->create_manager(ANONYMOUS, 'guest-session-one', '192.0.2.1');
+		$second_manager = $this->create_manager(ANONYMOUS, 'guest-session-two', '192.0.2.1');
+
+		self::assertTrue($first_manager->log_consent(array('necessary'), 1));
+		self::assertFalse($second_manager->log_consent(array('necessary'), 1));
 		$this->assertLogCount(1);
 	}
 
@@ -113,6 +125,22 @@ class log_manager_test extends \phpbb_database_test_case
 		$this->assertLogCount(\phpbb\consentmanager\service\log_manager::RATE_LIMIT_MAX);
 	}
 
+	public function test_log_consent_limits_guest_submissions_across_sessions_from_same_ip()
+	{
+		for ($version = 1; $version <= \phpbb\consentmanager\service\log_manager::RATE_LIMIT_MAX; $version++)
+		{
+			$manager = $this->create_manager(ANONYMOUS, 'guest-session-' . $version, '192.0.2.1');
+			self::assertTrue($manager->log_consent(array('necessary'), $version));
+		}
+
+		$same_ip_manager = $this->create_manager(ANONYMOUS, 'new-guest-session', '192.0.2.1');
+		self::assertFalse($same_ip_manager->log_consent(array('necessary', 'analytics'), 999));
+
+		$different_ip_manager = $this->create_manager(ANONYMOUS, 'another-guest-session', '192.0.2.2');
+		self::assertTrue($different_ip_manager->log_consent(array('necessary', 'analytics'), 999));
+		$this->assertLogCount(\phpbb\consentmanager\service\log_manager::RATE_LIMIT_MAX + 1);
+	}
+
 	protected function assertLogCount($expected)
 	{
 		$result = $this->db->sql_query('SELECT COUNT(*) AS log_count
@@ -123,7 +151,7 @@ class log_manager_test extends \phpbb_database_test_case
 		self::assertSame($expected, $count);
 	}
 
-	protected function create_manager($user_id, $session_id)
+	protected function create_manager($user_id, $session_id, $ip = '127.0.0.1')
 	{
 		$config = new \phpbb\config\config(array(
 			'rand_seed' => 'random-seed',
@@ -134,7 +162,7 @@ class log_manager_test extends \phpbb_database_test_case
 			'user_id' => $user_id,
 		);
 		$user->session_id = $session_id;
-		$user->ip = '127.0.0.1';
+		$user->ip = $ip;
 
 		return new \phpbb\consentmanager\service\log_manager(
 			$config,
