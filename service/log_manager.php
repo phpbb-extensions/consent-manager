@@ -138,7 +138,7 @@ class log_manager
 	{
 		$subject = (int) $this->user->data['user_id'] !== ANONYMOUS ? 'u:' . (int) $this->user->data['user_id'] : 's:' . $this->user->session_id;
 
-		return hash_hmac('sha256', $subject, $this->config['rand_seed']);
+		return hash_hmac('sha256', $subject, $this->config['consentmanager_hmac_secret']);
 	}
 
 	/**
@@ -158,6 +158,6 @@ class log_manager
 			return $anonymized_id;
 		}
 
-		return hash_hmac('sha256', 'ip:' . $this->user->ip, $this->config['rand_seed']);
+		return hash_hmac('sha256', 'ip:' . $this->user->ip, $this->config['consentmanager_hmac_secret']);
 	}
 }

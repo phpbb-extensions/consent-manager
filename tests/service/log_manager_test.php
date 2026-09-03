@@ -48,8 +48,8 @@ class log_manager_test extends \phpbb_database_test_case
 
 		$this->assertSqlResultEquals(array(
 			array(
-				'anonymized_id' => hash_hmac('sha256', 'u:42', 'random-seed'),
-				'throttle_id' => hash_hmac('sha256', 'u:42', 'random-seed'),
+				'anonymized_id' => hash_hmac('sha256', 'u:42', 'consent-secret'),
+				'throttle_id' => hash_hmac('sha256', 'u:42', 'consent-secret'),
 				'consent_version' => '3',
 				'accepted_categories' => '["necessary","analytics"]',
 			),
@@ -64,8 +64,8 @@ class log_manager_test extends \phpbb_database_test_case
 
 		$this->assertSqlResultEquals(array(
 			array(
-				'anonymized_id' => hash_hmac('sha256', 's:guest-session', 'random-seed'),
-				'throttle_id' => hash_hmac('sha256', 'ip:127.0.0.1', 'random-seed'),
+				'anonymized_id' => hash_hmac('sha256', 's:guest-session', 'consent-secret'),
+				'throttle_id' => hash_hmac('sha256', 'ip:127.0.0.1', 'consent-secret'),
 				'consent_version' => '9',
 				'accepted_categories' => '["necessary"]',
 			),
@@ -89,6 +89,16 @@ class log_manager_test extends \phpbb_database_test_case
 
 		self::assertTrue($first_manager->log_consent(array('necessary'), 1));
 		self::assertFalse($second_manager->log_consent(array('necessary'), 1));
+		$this->assertLogCount(1);
+	}
+
+	public function test_log_consent_guest_throttle_is_unchanged_after_rand_seed_rotation()
+	{
+		$manager_before = $this->create_manager(ANONYMOUS, 'guest-session-one', '192.0.2.1', 'old-random-seed');
+		$manager_after = $this->create_manager(ANONYMOUS, 'guest-session-two', '192.0.2.1', 'new-random-seed');
+
+		self::assertTrue($manager_before->log_consent(array('necessary'), 1));
+		self::assertFalse($manager_after->log_consent(array('necessary'), 1));
 		$this->assertLogCount(1);
 	}
 
@@ -151,10 +161,11 @@ class log_manager_test extends \phpbb_database_test_case
 		self::assertSame($expected, $count);
 	}
 
-	protected function create_manager($user_id, $session_id, $ip = '127.0.0.1')
+	protected function create_manager($user_id, $session_id, $ip = '127.0.0.1', $rand_seed = 'random-seed')
 	{
 		$config = new \phpbb\config\config(array(
-			'rand_seed' => 'random-seed',
+			'rand_seed' => $rand_seed,
+			'consentmanager_hmac_secret' => 'consent-secret',
 		));
 
 		$user = new \phpbb\user($this->language, '\phpbb\datetime');
