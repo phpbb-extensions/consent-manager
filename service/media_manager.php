@@ -12,6 +12,7 @@ namespace phpbb\consentmanager\service;
 
 use s9e\TextFormatter\Configurator;
 use s9e\TextFormatter\Configurator\Helpers\TemplateLoader;
+use s9e\TextFormatter\Configurator\Items\UnsafeTemplate;
 
 class media_manager
 {
@@ -50,7 +51,8 @@ class media_manager
 
 		foreach ($configurator->tags as $tag)
 		{
-			$template_source = (string) $tag->template;
+			$original_template = $tag->template;
+			$template_source = (string) $original_template;
 
 			if ($template_source === '' || stripos($template_source, 'iframe') === false)
 			{
@@ -63,9 +65,16 @@ class media_manager
 				continue;
 			}
 
-			$tag->template = $template;
-			$configurator->templateNormalizer->normalizeTag($tag);
-			$configurator->templateChecker->checkTag($tag);
+			try
+			{
+				$tag->template = ($original_template instanceof UnsafeTemplate) ? new UnsafeTemplate($template) : $template;
+				$configurator->templateNormalizer->normalizeTag($tag);
+				$configurator->templateChecker->checkTag($tag);
+			}
+			catch (\Exception $e)
+			{
+				$tag->template = $original_template;
+			}
 		}
 	}
 

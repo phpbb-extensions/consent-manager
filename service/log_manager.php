@@ -64,16 +64,18 @@ class log_manager
 	public function log_consent(array $categories, $version)
 	{
 		$anonymized_id = $this->get_anonymized_subject();
+		$throttle_id = $this->get_throttle_subject($anonymized_id);
 		$accepted_categories = json_encode(array_values($categories));
 		$now = time();
 
-		if ($this->should_suppress_submission($anonymized_id, (int) $version, $accepted_categories, $now))
+		if ($this->should_suppress_submission($throttle_id, (int) $version, $accepted_categories, $now))
 		{
 			return false;
 		}
 
 		$record = [
 			'anonymized_id' => $anonymized_id,
+			'throttle_id' => $throttle_id,
 			'consent_version' => (int) $version,
 			'accepted_categories' => $accepted_categories,
 			'consent_time' => $now,
@@ -88,18 +90,18 @@ class log_manager
 	/**
 	 * Suppress rapid duplicates and excessive submissions from one subject.
 	 *
-	 * @param string $anonymized_id Anonymized user or guest-session identifier
+	 * @param string $throttle_id Anonymized user or guest-IP throttle identifier
 	 * @param int    $version Consent version
 	 * @param string $accepted_categories JSON-encoded normalized categories
 	 * @param int    $now Current Unix timestamp
 	 *
 	 * @return bool
 	 */
-	protected function should_suppress_submission($anonymized_id, $version, $accepted_categories, $now)
+	protected function should_suppress_submission($throttle_id, $version, $accepted_categories, $now)
 	{
 		$sql = 'SELECT consent_version, accepted_categories, consent_time
 			FROM ' . $this->consent_logs_table . "
-			WHERE anonymized_id = '" . $this->db->sql_escape($anonymized_id) . "'
+			WHERE throttle_id = '" . $this->db->sql_escape($throttle_id) . "'
 				AND consent_time >= " . ((int) $now - self::RATE_LIMIT_WINDOW) . '
 			ORDER BY consent_log_id DESC';
 		$result = $this->db->sql_query_limit($sql, self::RATE_LIMIT_MAX);
@@ -136,6 +138,26 @@ class log_manager
 	{
 		$subject = (int) $this->user->data['user_id'] !== ANONYMOUS ? 'u:' . (int) $this->user->data['user_id'] : 's:' . $this->user->session_id;
 
-		return hash_hmac('sha256', $subject, $this->config['rand_seed']);
+		return hash_hmac('sha256', $subject, $this->config['consentmanager_hmac_secret']);
+	}
+
+	/**
+	 * Build an anonymized identifier used to throttle the current subject.
+	 *
+	 * Guest throttling uses the requester IP so discarding the session cookie
+	 * cannot reset the duplicate or rate-limit windows.
+	 *
+	 * @param string $anonymized_id Current user or guest-session identifier
+	 *
+	 * @return string
+	 */
+	protected function get_throttle_subject($anonymized_id)
+	{
+		if ((int) $this->user->data['user_id'] !== ANONYMOUS)
+		{
+			return $anonymized_id;
+		}
+
+		return hash_hmac('sha256', 'ip:' . $this->user->ip, $this->config['consentmanager_hmac_secret']);
 	}
 }

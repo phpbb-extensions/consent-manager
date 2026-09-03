@@ -1017,7 +1017,7 @@ class consent_manager implements consent_manager_interface
 			return false;
 		}
 
-		return !isset($parts['scheme']) || in_array(strtolower($parts['scheme']), ['http', 'https'], true);
+		return !isset($parts['scheme']) || strtolower($parts['scheme']) === 'https';
 	}
 
 	/**

@@ -290,6 +290,10 @@ class consent_manager_test extends \phpbb_test_case
 				'category' => 'analytics',
 				'src' => 'javascript:alert(1)',
 			)),
+			'insecure remote source' => array(array(
+				'category' => 'analytics',
+				'src' => 'http://cdn.example.com/script.js',
+			)),
 			'remote source with forbidden characters' => array(array(
 				'category' => 'analytics',
 				'src' => 'https://cdn.example.com/<bad>.js',
@@ -893,6 +897,19 @@ class consent_manager_test extends \phpbb_test_case
 
 		self::assertSame(array(), $manager->normalize_integrations(' [] ', $errors));
 		self::assertSame(array(), $errors);
+	}
+
+	public function test_normalize_integrations_rejects_http_script_source()
+	{
+		$manager = $this->get_manager();
+		$errors = array();
+		$input = '[{"id":"board.analytics","category":"analytics","src":"http://cdn.example.com/analytics.js"}]';
+
+		self::assertSame(array(), $manager->normalize_integrations($input, $errors));
+		self::assertSame(
+			array($this->language->lang('ACP_CONSENTMANAGER_INVALID_INTEGRATION_ENTRY', 1)),
+			$errors
+		);
 	}
 
 	public function test_validate_log_payload_accepts_valid_hash_and_normalizes_categories()

@@ -281,16 +281,13 @@ class acp_manager
 	 * Mirrors the HMAC used in log_manager::log_consent() so that admins can
 	 * filter exports by user ID without exposing raw identifiers.
 	 *
-	 * Note: it only matches rows hashed with the current config[rand_seed]. Records
-	 * logged before a rand_seed rotation will not be found.
-	 *
 	 * @param int $user_id Numeric phpBB user ID (must be > 0)
 	 *
 	 * @return string 64-character hex hash
 	 */
 	public function hash_user_id($user_id)
 	{
-		return hash_hmac('sha256', 'u:' . (int) $user_id, $this->config['rand_seed']);
+		return hash_hmac('sha256', 'u:' . (int) $user_id, $this->config['consentmanager_hmac_secret']);
 	}
 
 	/**

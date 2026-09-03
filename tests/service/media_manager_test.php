@@ -150,6 +150,46 @@ class media_manager_test extends \phpbb_test_case
 		self::assertStringContainsString('<iframe src="https://video.example.com/embed/123"', $template);
 	}
 
+	public function test_configure_iframe_embeds_preserves_unsafe_custom_bbcode_template()
+	{
+		$this->expect_media_enabled(true);
+
+		$configurator = new \s9e\TextFormatter\Configurator();
+		$configurator->BBCodes->addCustom(
+			'[myframe]{TEXT}[/myframe]',
+			new \s9e\TextFormatter\Configurator\Items\UnsafeTemplate('<iframe src="{TEXT}"></iframe>')
+		);
+
+		$this->manager->configure_iframe_embeds($configurator);
+
+		$template = $configurator->tags['MYFRAME']->template;
+		self::assertInstanceOf('\s9e\TextFormatter\Configurator\Items\UnsafeTemplate', $template);
+		self::assertStringContainsString('$S_CONSENTMANAGER_MEDIA_ALLOWED', (string) $template);
+		self::assertStringContainsString('data-consent-src="{.}"', (string) $template);
+	}
+
+	public function test_configure_iframe_embeds_restores_original_template_when_validation_fails()
+	{
+		$this->expect_media_enabled(true);
+
+		$configurator = $this->create_configurator_with_tag(
+			'CUSTOM',
+			'<iframe src="https://video.example.com/embed/123"></iframe>'
+		);
+		$original_template = $configurator->tags['CUSTOM']->template;
+		$configurator->templateChecker->append(new class extends \s9e\TextFormatter\Configurator\TemplateCheck
+		{
+			public function check(\DOMElement $template, \s9e\TextFormatter\Configurator\Items\Tag $tag)
+			{
+				throw new \RuntimeException('Rejected transformed template');
+			}
+		});
+
+		$this->manager->configure_iframe_embeds($configurator);
+
+		self::assertSame($original_template, $configurator->tags['CUSTOM']->template);
+	}
+
 	public function test_configure_iframe_embeds_produces_consistent_results_for_identical_templates()
 	{
 		$this->expect_media_enabled(true);
