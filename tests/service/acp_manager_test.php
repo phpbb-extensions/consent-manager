@@ -83,9 +83,21 @@ class acp_manager_test extends \phpbb_database_test_case
 	public function test_hash_user_id_returns_hmac_of_user_prefix()
 	{
 		$manager = $this->create_manager(1, 'session');
-		$expected = hash_hmac('sha256', 'u:42', 'random-seed');
+		$expected = hash_hmac('sha256', 'u:42', 'consent-secret');
 
 		self::assertSame($expected, $manager->hash_user_id(42));
+	}
+
+	public function test_hash_user_id_is_unchanged_after_rand_seed_rotation()
+	{
+		$manager_before = $this->create_manager(1, 'session', null, null, null, null, null, [
+			'rand_seed' => 'old-random-seed',
+		]);
+		$manager_after = $this->create_manager(1, 'session', null, null, null, null, null, [
+			'rand_seed' => 'new-random-seed',
+		]);
+
+		self::assertSame($manager_before->hash_user_id(42), $manager_after->hash_user_id(42));
 	}
 
 	public function test_hash_user_id_is_consistent()
@@ -491,7 +503,7 @@ class acp_manager_test extends \phpbb_database_test_case
 
 		self::assertCount(1, $rows);
 
-		$expected_hash = hash_hmac('sha256', 'u:42', 'random-seed');
+		$expected_hash = hash_hmac('sha256', 'u:42', 'consent-secret');
 		self::assertStringContainsString($expected_hash, reset($rows));
 	}
 
@@ -602,7 +614,7 @@ class acp_manager_test extends \phpbb_database_test_case
 
 		self::assertCount(1, $rows);
 
-		$remaining_hash = hash_hmac('sha256', 'u:99', 'random-seed');
+		$remaining_hash = hash_hmac('sha256', 'u:99', 'consent-secret');
 		self::assertStringContainsString($remaining_hash, reset($rows));
 	}
 
@@ -644,6 +656,7 @@ class acp_manager_test extends \phpbb_database_test_case
 
 		$config = new \phpbb\config\config(array_merge(array(
 			'rand_seed' => 'random-seed',
+			'consentmanager_hmac_secret' => 'consent-secret',
 			'consentmanager_analytics_enabled' => 1,
 			'consentmanager_marketing_enabled' => 1,
 			'consentmanager_media_enabled' => 1,
@@ -804,6 +817,7 @@ JSON;
 	{
 		$config = new \phpbb\config\config(array(
 			'rand_seed' => 'random-seed',
+			'consentmanager_hmac_secret' => 'consent-secret',
 		));
 
 		$user = new \phpbb\user($this->language, '\phpbb\datetime');
