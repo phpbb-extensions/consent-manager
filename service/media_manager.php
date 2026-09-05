@@ -197,24 +197,39 @@ class media_manager
 			$iframe->removeAttribute('onload');
 		}
 
-		foreach ($iframe->childNodes as $child_node)
+		$this->rewrite_xsl_iframe_attributes($iframe);
+
+		$iframe->setAttribute('data-consent-media-frame', '1');
+	}
+
+	/**
+	 * Rewrite deferred attributes nested inside XSL control-flow elements.
+	 *
+	 * @param \DOMElement $parent Iframe or XSL control-flow element
+	 *
+	 * @return void
+	 */
+	protected function rewrite_xsl_iframe_attributes(\DOMElement $parent)
+	{
+		foreach ($parent->childNodes as $child_node)
 		{
-			if (!$child_node instanceof \DOMElement
-				|| $child_node->namespaceURI !== self::XSL_NAMESPACE
-				|| $child_node->localName !== 'attribute'
-			)
+			if (!$child_node instanceof \DOMElement || $child_node->namespaceURI !== self::XSL_NAMESPACE)
 			{
 				continue;
 			}
 
-			$name = $child_node->getAttribute('name');
-			if ($name === 'src' || $name === 'onload')
+			if ($child_node->localName === 'attribute')
 			{
-				$child_node->setAttribute('name', 'data-consent-' . $name);
+				$name = $child_node->getAttribute('name');
+				if ($name === 'src' || $name === 'onload')
+				{
+					$child_node->setAttribute('name', 'data-consent-' . $name);
+				}
+				continue;
 			}
-		}
 
-		$iframe->setAttribute('data-consent-media-frame', '1');
+			$this->rewrite_xsl_iframe_attributes($child_node);
+		}
 	}
 
 	/**
