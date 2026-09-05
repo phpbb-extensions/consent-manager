@@ -299,6 +299,30 @@ class media_manager_test extends \phpbb_test_case
 		self::assertStringNotContainsString(' onload="boot()"', $template);
 	}
 
+	public function test_rewrite_iframe_node_rewrites_attributes_nested_in_xsl_control_flow()
+	{
+		$dom = \s9e\TextFormatter\Configurator\Helpers\TemplateLoader::load(
+			'<iframe>'
+				. '<xsl:choose xmlns:xsl="http://www.w3.org/1999/XSL/Transform">'
+					. '<xsl:when test="@episode_id">'
+						. '<xsl:attribute name="src">https://embed.example.com/episode/<xsl:value-of select="@episode_id"/></xsl:attribute>'
+					. '</xsl:when>'
+					. '<xsl:otherwise>'
+						. '<xsl:attribute name="src">https://embed.example.com/show/<xsl:value-of select="@podcast_id"/></xsl:attribute>'
+					. '</xsl:otherwise>'
+				. '</xsl:choose>'
+			. '</iframe>'
+		);
+		$iframe = $dom->getElementsByTagName('iframe')->item(0);
+
+		$this->invoke_method($this->manager, 'rewrite_iframe_node', [$iframe]);
+
+		$template = \s9e\TextFormatter\Configurator\Helpers\TemplateLoader::save($dom);
+		self::assertSame(2, substr_count($template, 'name="data-consent-src"'));
+		self::assertStringNotContainsString('name="src"', $template);
+		self::assertStringContainsString('data-consent-media-frame="1"', $template);
+	}
+
 	protected function invoke_method($object, $method_name, array $arguments = [])
 	{
 		return (new \ReflectionMethod($object, $method_name))->invokeArgs($object, $arguments);
