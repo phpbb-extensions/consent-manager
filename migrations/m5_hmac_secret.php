@@ -25,7 +25,7 @@ class m5_hmac_secret extends \phpbb\db\migration\migration
 	public function update_data()
 	{
 		return [
-			['config.add', ['consentmanager_hmac_secret', (string) $this->config['rand_seed']]],
+			['config.add', ['consentmanager_hmac_secret', bin2hex(random_bytes(32))]],
 		];
 	}
 
