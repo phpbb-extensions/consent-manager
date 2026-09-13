@@ -22,6 +22,9 @@ class log_manager
 	/** Maximum accepted decisions per anonymized subject during the rate-limit window. */
 	public const RATE_LIMIT_MAX = 20;
 
+	/** Maximum accepted guest decisions per IP address during the rate-limit window. */
+	public const IP_RATE_LIMIT_MAX = 200;
+
 	/** Rate-limit window in seconds. */
 	public const RATE_LIMIT_WINDOW = 3600;
 
@@ -68,7 +71,7 @@ class log_manager
 		$accepted_categories = json_encode(array_values($categories));
 		$now = time();
 
-		if ($this->should_suppress_submission($throttle_id, (int) $version, $accepted_categories, $now))
+		if ($this->should_suppress_submission($anonymized_id, $throttle_id, (int) $version, $accepted_categories, $now))
 		{
 			return false;
 		}
@@ -90,6 +93,7 @@ class log_manager
 	/**
 	 * Suppress rapid duplicates and excessive submissions from one subject.
 	 *
+	 * @param string $anonymized_id Anonymized user or guest-session identifier
 	 * @param string $throttle_id Anonymized user or guest-IP throttle identifier
 	 * @param int    $version Consent version
 	 * @param string $accepted_categories JSON-encoded normalized categories
@@ -97,11 +101,11 @@ class log_manager
 	 *
 	 * @return bool
 	 */
-	protected function should_suppress_submission($throttle_id, $version, $accepted_categories, $now)
+	protected function should_suppress_submission($anonymized_id, $throttle_id, $version, $accepted_categories, $now)
 	{
 		$sql = 'SELECT consent_version, accepted_categories, consent_time
 			FROM ' . $this->consent_logs_table . "
-			WHERE throttle_id = '" . $this->db->sql_escape($throttle_id) . "'
+			WHERE anonymized_id = '" . $this->db->sql_escape($anonymized_id) . "'
 				AND consent_time >= " . ((int) $now - self::RATE_LIMIT_WINDOW) . '
 			ORDER BY consent_log_id DESC';
 		$result = $this->db->sql_query_limit($sql, self::RATE_LIMIT_MAX);
@@ -126,7 +130,30 @@ class log_manager
 			return true;
 		}
 
-		return $count >= self::RATE_LIMIT_MAX;
+		if ($count >= self::RATE_LIMIT_MAX)
+		{
+			return true;
+		}
+
+		if ($throttle_id === $anonymized_id)
+		{
+			return false;
+		}
+
+		$sql = 'SELECT consent_log_id
+			FROM ' . $this->consent_logs_table . "
+			WHERE throttle_id = '" . $this->db->sql_escape($throttle_id) . "'
+				AND consent_time >= " . ((int) $now - self::RATE_LIMIT_WINDOW);
+		$result = $this->db->sql_query_limit($sql, self::IP_RATE_LIMIT_MAX);
+		$count = 0;
+
+		while ($this->db->sql_fetchrow($result))
+		{
+			$count++;
+		}
+		$this->db->sql_freeresult($result);
+
+		return $count >= self::IP_RATE_LIMIT_MAX;
 	}
 
 	/**
