@@ -188,6 +188,9 @@ class translation_manager
 		$allowed_languages = array_fill_keys($installed_languages, true);
 		$allowed_keys = array_intersect($allowed_keys, array_keys(self::BANNER_FIELDS));
 		$allowed_keys = array_fill_keys($allowed_keys, true);
+		$delete_keys_by_language = [];
+		$replacement_rows = [];
+		$updated_at = time();
 
 		foreach ($submitted_translations as $lang_iso => $translations)
 		{
@@ -202,11 +205,11 @@ class translation_manager
 				{
 					continue;
 				}
+				$delete_keys_by_language[$lang_iso][$translation_key] = true;
 
 				$translation_text = trim((string) $translation_text);
 				if ($translation_text === '' || $translation_text === $this->get_language_default($lang_iso, self::BANNER_FIELDS[$translation_key]['fallback']))
 				{
-					$this->delete_translation($translation_key, $lang_iso);
 					continue;
 				}
 
@@ -227,13 +230,42 @@ class translation_manager
 					continue;
 				}
 
-				$this->upsert_translation($translation_key, $lang_iso, $translation_text, $parsed_text, $uid, $bitfield, $options);
+				$replacement_rows[] = [
+					'translation_key' => $translation_key,
+					'lang_iso' => $lang_iso,
+					'translation_text' => utf8_encode_ucr($translation_text),
+					'translation_text_parsed' => $parsed_text,
+					'translation_uid' => $uid,
+					'translation_bitfield' => $bitfield,
+					'translation_options' => (int) $options,
+					'updated_at' => $updated_at,
+				];
 			}
 		}
 
 		if (!empty($errors))
 		{
 			return false;
+		}
+
+		if (!empty($delete_keys_by_language))
+		{
+			$delete_conditions = [];
+			foreach ($delete_keys_by_language as $lang_iso => $translation_keys)
+			{
+				$delete_conditions[] = "(lang_iso = '" . $this->db->sql_escape($lang_iso) . "'
+					AND " . $this->db->sql_in_set('translation_key', array_keys($translation_keys)) . ')';
+			}
+
+			$this->db->sql_transaction('begin');
+			$this->db->sql_query('DELETE FROM ' . $this->translations_table . '
+				WHERE ' . implode(' OR ', $delete_conditions));
+
+			if (!empty($replacement_rows))
+			{
+				$this->db->sql_multi_insert($this->translations_table, $replacement_rows);
+			}
+			$this->db->sql_transaction('commit');
 		}
 
 		$this->translations = null;
@@ -312,62 +344,6 @@ class translation_manager
 		$translations = $this->get_custom_translations();
 
 		return $translations[$translation_key][$lang_iso] ?? null;
-	}
-
-	/**
-	 * Insert or update a custom translation.
-	 *
-	 * @return void
-	 */
-	protected function upsert_translation($translation_key, $lang_iso, $translation_text, $parsed_text, $uid, $bitfield, $options)
-	{
-		$sql_ary = [
-			'translation_key' => $translation_key,
-			'lang_iso' => $lang_iso,
-			'translation_text' => utf8_encode_ucr($translation_text),
-			'translation_text_parsed' => $parsed_text,
-			'translation_uid' => $uid,
-			'translation_bitfield' => $bitfield,
-			'translation_options' => (int) $options,
-			'updated_at' => time(),
-		];
-
-		$sql = 'SELECT translation_id
-			FROM ' . $this->translations_table . "
-			WHERE translation_key = '" . $this->db->sql_escape($translation_key) . "'
-				AND lang_iso = '" . $this->db->sql_escape($lang_iso) . "'";
-		$result = $this->db->sql_query($sql);
-		$translation_id = (int) $this->db->sql_fetchfield('translation_id');
-		$this->db->sql_freeresult($result);
-
-		if ($translation_id)
-		{
-			$sql = 'UPDATE ' . $this->translations_table . '
-				SET ' . $this->db->sql_build_array('UPDATE', $sql_ary) . '
-				WHERE translation_id = ' . $translation_id;
-		}
-		else
-		{
-			$sql = 'INSERT INTO ' . $this->translations_table . ' ' . $this->db->sql_build_array('INSERT', $sql_ary);
-		}
-
-		$this->db->sql_query($sql);
-	}
-
-	/**
-	 * Delete a custom translation.
-	 *
-	 * @param string $translation_key Translation key
-	 * @param string $lang_iso Language ISO
-	 *
-	 * @return void
-	 */
-	protected function delete_translation($translation_key, $lang_iso)
-	{
-		$sql = 'DELETE FROM ' . $this->translations_table . "
-			WHERE translation_key = '" . $this->db->sql_escape($translation_key) . "'
-				AND lang_iso = '" . $this->db->sql_escape($lang_iso) . "'";
-		$this->db->sql_query($sql);
 	}
 
 	/**
