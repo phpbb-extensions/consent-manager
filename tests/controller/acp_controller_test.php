@@ -145,7 +145,11 @@ class acp_controller_test extends \phpbb_test_case
 			return $vars['S_ERROR']
 				&& $vars['ERROR_MSG'] === 'Invalid integrations'
 				&& $vars['U_ACTION'] === self::ACP_URL
-				&& isset($vars['CONSENTMANAGER_VERSION']);
+				&& isset($vars['CONSENTMANAGER_VERSION'])
+				&& $vars['S_CONSENTMANAGER_ANALYTICS'] === true
+				&& $vars['S_CONSENTMANAGER_MARKETING'] === false
+				&& $vars['S_CONSENTMANAGER_MEDIA'] === false
+				&& $vars['CONSENTMANAGER_INTEGRATIONS'] === "  invalid json  \n";
 		})];
 
 		$this->template->expects(self::once())
