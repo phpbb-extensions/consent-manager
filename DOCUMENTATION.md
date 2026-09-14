@@ -122,7 +122,7 @@ $accepted = $consent_manager->register(string $id, array $definition);
 - Registration IDs and script IDs may only use letters, numbers, `.`, `_`, `:`, and `-`, and must start with a letter or number.
 - Supported categories are `necessary`, `analytics`, `marketing`, and `media`.
 - Each `scripts` definition must use **one** of these execution sources: `src`, `asset`, or `inline`.
-- `src` accepts `http`, `https`, or relative URLs. URLs such as `//example.com/...` are not allowed.
+- `src` accepts HTTPS or relative URLs. URLs such as `//example.com/...` are not allowed.
 - `asset` must be a local phpBB asset path such as `@vendor_example/js/file.js`.
 - Unsafe HTML event-handler attributes such as `onclick` are ignored.
 
@@ -172,7 +172,7 @@ Each entry inside `scripts` supports the following options.
 |----------------------|------------------------------|-------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------|
 | `id`                 | Optional                     | Unique ID for this script. If omitted, Consent Manager creates one when needed.                                         | `'id' => 'vendor.example.analytics.loader'`       |
 | `category`           | Optional                     | Lets this script use a different category from the main registration. Most extensions should keep the same category.    | `'category' => 'marketing'`                       |
-| `src`                | Needed for remote files      | URL of an external script, or a relative URL. Do not combine with `asset` or `inline`.                                  | `'src' => 'https://cdn.example.com/analytics.js'` |
+| `src`                | Needed for remote files      | HTTPS URL of an external script, or a path relative to the phpBB root. Do not combine with `asset` or `inline`.         | `'src' => 'https://cdn.example.com/analytics.js'` |
 | `asset`              | Needed for extension files   | Local phpBB asset path. Best for JavaScript files that ship with your extension. Do not combine with `src` or `inline`. | `'asset' => '@vendor_example/js/analytics.js'`    |
 | `inline`             | Needed for inline JavaScript | JavaScript code that Consent Manager should inject after consent. Do not combine with `src` or `asset`.                 | `'inline' => 'window.tracker.start();'`           |
 | `async`              | Optional                     | Sets `<script async>`. Defaults to `true` for `src` and `asset`, and `false` for `inline`.                              | `'async' => true`                                 |

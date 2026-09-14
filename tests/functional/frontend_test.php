@@ -52,7 +52,7 @@ class frontend_test extends functional_base
 			'category' => 'analytics',
 			'label' => $label,
 			'description' => $description,
-			'src' => '/analytics.js',
+			'src' => 'https://cdn.example.com/analytics.js',
 		)));
 
 		$this->db->sql_query('UPDATE ' . CONFIG_TEXT_TABLE . "

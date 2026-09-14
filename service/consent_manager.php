@@ -492,7 +492,7 @@ class consent_manager implements consent_manager_interface
 			$category = isset($item['category']) ? trim((string) $item['category']) : '';
 			$src = isset($item['src']) ? trim((string) $item['src']) : '';
 
-			if (!$this->is_valid_identifier($id) || !$this->is_supported_category($category) || !$this->is_valid_script_source($src))
+			if (!$this->is_valid_identifier($id) || !$this->is_supported_category($category) || !$this->is_valid_absolute_https_script_source($src))
 			{
 				$errors[] = $this->language->lang('ACP_CONSENTMANAGER_INVALID_INTEGRATION_ENTRY', $index + 1);
 				continue;
@@ -1024,6 +1024,28 @@ class consent_manager implements consent_manager_interface
 		}
 
 		return !isset($parts['scheme']) || strtolower($parts['scheme']) === 'https';
+	}
+
+	/**
+	 * Determine whether an ACP-managed source is an absolute HTTPS URL.
+	 *
+	 * @param string $src Script source URL
+	 *
+	 * @return bool
+	 */
+	protected function is_valid_absolute_https_script_source($src)
+	{
+		if (!$this->is_valid_script_source($src))
+		{
+			return false;
+		}
+
+		$parts = parse_url($src);
+
+		return $parts !== false
+			&& isset($parts['scheme'], $parts['host'])
+			&& strtolower($parts['scheme']) === 'https'
+			&& $parts['host'] !== '';
 	}
 
 	/**
