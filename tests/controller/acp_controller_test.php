@@ -145,7 +145,11 @@ class acp_controller_test extends \phpbb_test_case
 			return $vars['S_ERROR']
 				&& $vars['ERROR_MSG'] === 'Invalid integrations'
 				&& $vars['U_ACTION'] === self::ACP_URL
-				&& isset($vars['CONSENTMANAGER_VERSION']);
+				&& isset($vars['CONSENTMANAGER_VERSION'])
+				&& $vars['S_CONSENTMANAGER_ANALYTICS'] === true
+				&& $vars['S_CONSENTMANAGER_MARKETING'] === false
+				&& $vars['S_CONSENTMANAGER_MEDIA'] === false
+				&& $vars['CONSENTMANAGER_INTEGRATIONS'] === "  invalid json  \n";
 		})];
 
 		$this->template->expects(self::once())
@@ -675,7 +679,7 @@ class acp_controller_test extends \phpbb_test_case
 
 		self::assertInstanceOf('\Symfony\Component\HttpFoundation\StreamedResponse', $response);
 		self::assertSame('text/csv; charset=UTF-8', $response->headers->get('Content-Type'));
-		self::assertRegExp('/^attachment; filename="?consent_logs_\d{4}-\d{2}-\d{2}_\d{6}\.csv"?$/', $response->headers->get('Content-Disposition'));
+		self::assertMatchesRegularExpression('/^attachment; filename="?consent_logs_\d{4}-\d{2}-\d{2}_\d{6}\.csv"?$/', $response->headers->get('Content-Disposition'));
 		self::assertTrue($response->headers->hasCacheControlDirective('no-cache'));
 		self::assertTrue($response->headers->hasCacheControlDirective('no-store'));
 		self::assertTrue($response->headers->hasCacheControlDirective('must-revalidate'));

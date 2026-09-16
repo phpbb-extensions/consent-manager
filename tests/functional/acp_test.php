@@ -41,7 +41,7 @@ class acp_test extends functional_base
 			'id' => 'board.analytics',
 			'category' => 'analytics',
 			'label' => $label,
-			'src' => '/analytics.js',
+			'src' => 'https://cdn.example.com/analytics.js',
 		)));
 
 		$this->db->sql_query('UPDATE ' . CONFIG_TEXT_TABLE . "
