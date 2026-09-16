@@ -64,10 +64,11 @@ class log_controller
 			], $this->get_error_status_code($submission['error']));
 		}
 
-		$this->log_manager->log_consent($submission['categories'], $submission['version']);
+		$logged = $this->log_manager->log_consent($submission['categories'], $submission['version']);
 
 		return new JsonResponse([
 			'success' => true,
+			'logged' => $logged,
 			'categories' => $submission['categories'],
 			'version' => $submission['version'],
 		]);

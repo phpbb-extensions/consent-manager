@@ -232,6 +232,32 @@ class translation_manager_test extends \phpbb_database_test_case
 		$this->assertSqlResultEquals([], 'SELECT translation_key FROM phpbb_consentmanager_translations');
 	}
 
+	public function test_validation_errors_do_not_partially_replace_translations()
+	{
+		$manager = $this->create_manager();
+		$errors = [];
+
+		self::assertTrue($manager->save_translations([
+			'en' => [
+				'banner_title' => 'Original title',
+			],
+		], ['banner_title'], $errors));
+
+		self::assertFalse($manager->save_translations([
+			'en' => [
+				'banner_title' => 'Changed title',
+				'banner_message' => '[img]https://example.com/image.png[/img]',
+			],
+		], ['banner_title', 'banner_message'], $errors));
+
+		self::assertNotEmpty($errors);
+		self::assertSame('Original title', $manager->get_translation('banner_title', 'CONSENTMANAGER_DEFAULT_BANNER_TITLE', 'en'));
+		$this->assertSqlResultEquals(
+			[['translation_key' => 'banner_title', 'translation_text' => 'Original title']],
+			'SELECT translation_key, translation_text FROM phpbb_consentmanager_translations'
+		);
+	}
+
 	public function test_accepts_translation_text_at_maximum_length()
 	{
 		$manager = $this->create_manager();

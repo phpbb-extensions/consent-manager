@@ -94,17 +94,23 @@ class acp_controller
 		{
 			$this->validate_form_key('phpbb_consentmanager_acp');
 
-			$errors = [];
-			$saved = $this->acp_manager->save_settings([
+			$submitted_settings = [
 				'analytics_enabled' => $this->request->variable('consentmanager_analytics_enabled', 0),
 				'marketing_enabled' => $this->request->variable('consentmanager_marketing_enabled', 0),
 				'media_enabled' => $this->request->variable('consentmanager_media_enabled', 0),
-				'integrations' => trim($this->request->raw_variable('consentmanager_integrations', '')),
+				'integrations' => $this->request->raw_variable('consentmanager_integrations', ''),
+			];
+			$errors = [];
+			$saved = $this->acp_manager->save_settings([
+				'analytics_enabled' => $submitted_settings['analytics_enabled'],
+				'marketing_enabled' => $submitted_settings['marketing_enabled'],
+				'media_enabled' => $submitted_settings['media_enabled'],
+				'integrations' => trim($submitted_settings['integrations']),
 			], $errors);
 
 			if (!$saved)
 			{
-				$this->assign_template_vars($errors);
+				$this->assign_template_vars($errors, $submitted_settings);
 				return;
 			}
 
@@ -347,10 +353,21 @@ class acp_controller
 		];
 	}
 
-	protected function assign_template_vars(array $errors = [])
+	protected function assign_template_vars(array $errors = [], array $submitted_settings = null)
 	{
+		$template_data = $this->acp_manager->get_settings_template_data();
+		if ($submitted_settings !== null)
+		{
+			$template_data = array_merge($template_data, [
+				'S_CONSENTMANAGER_ANALYTICS' => !empty($submitted_settings['analytics_enabled']),
+				'S_CONSENTMANAGER_MARKETING' => !empty($submitted_settings['marketing_enabled']),
+				'S_CONSENTMANAGER_MEDIA' => !empty($submitted_settings['media_enabled']),
+				'CONSENTMANAGER_INTEGRATIONS' => (string) $submitted_settings['integrations'],
+			]);
+		}
+
 		$this->template->assign_vars(array_merge(
-			$this->acp_manager->get_settings_template_data(),
+			$template_data,
 			[
 				'S_ERROR'	=> !empty($errors),
 				'ERROR_MSG'	=> implode('<br>', $errors),

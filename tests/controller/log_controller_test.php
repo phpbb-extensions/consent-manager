@@ -80,7 +80,8 @@ class log_controller_test extends \phpbb_test_case
 	{
 		$this->log_manager->expects(self::once())
 			->method('log_consent')
-			->with(['necessary', 'analytics'], 5);
+			->with(['necessary', 'analytics'], 5)
+			->willReturn(true);
 
 		$this->consent_manager->expects(self::once())
 			->method('validate_log_payload')
@@ -99,7 +100,33 @@ class log_controller_test extends \phpbb_test_case
 		self::assertSame(200, $response->getStatusCode());
 		self::assertSame(array(
 			'success' => true,
+			'logged' => true,
 			'categories' => array('necessary', 'analytics'),
+			'version' => 5,
+		), json_decode($response->getContent(), true));
+	}
+
+	public function test_log_reports_suppressed_submission()
+	{
+		$this->log_manager->expects(self::once())
+			->method('log_consent')
+			->willReturn(false);
+
+		$this->consent_manager->expects(self::once())
+			->method('validate_log_payload')
+			->willReturn(array(
+				'success' => true,
+				'categories' => array('necessary'),
+				'version' => 5,
+			));
+
+		$response = $this->controller->log(new \Symfony\Component\HttpFoundation\Request(array(), array(), array(), array(), array(), array(), '{}'));
+
+		self::assertSame(200, $response->getStatusCode());
+		self::assertSame(array(
+			'success' => true,
+			'logged' => false,
+			'categories' => array('necessary'),
 			'version' => 5,
 		), json_decode($response->getContent(), true));
 	}

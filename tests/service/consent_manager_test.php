@@ -918,6 +918,36 @@ class consent_manager_test extends \phpbb_test_case
 		);
 	}
 
+	/**
+	 * @dataProvider non_absolute_acp_script_source_data
+	 */
+	public function test_normalize_integrations_rejects_non_absolute_script_source($src)
+	{
+		$manager = $this->get_manager();
+		$errors = array();
+		$input = [[
+			'id' => 'board.analytics',
+			'category' => 'analytics',
+			'src' => $src,
+		]];
+
+		self::assertSame(array(), $manager->normalize_integrations($input, $errors));
+		self::assertSame(
+			array($this->language->lang('ACP_CONSENTMANAGER_INVALID_INTEGRATION_ENTRY', 1)),
+			$errors
+		);
+	}
+
+	public function non_absolute_acp_script_source_data()
+	{
+		return [
+			'path relative' => ['ext/vendor/example/script.js'],
+			'root relative' => ['/ext/vendor/example/script.js'],
+			'protocol relative' => ['//cdn.example.com/script.js'],
+			'HTTPS without host' => ['https:script.js'],
+		];
+	}
+
 	public function test_validate_log_payload_accepts_valid_hash_and_normalizes_categories()
 	{
 		$manager = $this->get_manager(array(
