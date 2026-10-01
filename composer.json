@@ -3,7 +3,7 @@
 	"type": "phpbb-extension",
 	"description": "GDPR-ready consent manager for phpBB forums, providing category consent, deferred script and iframe loading, consent logging, and extension integration APIs.",
 	"homepage": "https://www.phpbb.com/",
-	"version": "1.0.1",
+	"version": "1.1.0-dev",
 	"keywords": ["phpbb", "extension", "gdpr", "consent", "cookies"],
 	"license": "GPL-2.0-only",
 	"authors": [
@@ -23,7 +23,10 @@
 	"extra": {
 		"display-name": "Consent Manager",
 		"soft-require": {
-			"phpbb/phpbb": ">=3.3.5"
+			"phpbb/phpbb": ">=4.0.0@dev"
 		}
+	},
+	"branch-alias": {
+		"dev-develop": "1.1.x-dev"
 	}
 }
