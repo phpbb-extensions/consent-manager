@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.2 - 2026-11-08
+
+### Changed
+
+- Prevented installation on phpBB 4 due to current code incompatibilities.
+- Hardened consent logging with user- and session-bound HMAC tokens, JSON-only requests, and stricter payload validation.
+- Deferred external scripts now explicitly preserve their `async` and `defer` behavior, maintaining registration order for synchronous scripts.
+- Hardened consent cookie parsing and JavaScript tracking maps against malformed values and prototype-name collisions.
+
+### Fixed
+
+- Fixed an issue where Consent Manager could disable custom content-sizing from the Media Embed extension embeds.
+- Fixed registered necessary-category scripts not loading when all optional consent categories were disabled.
+- Fixed Unicode usernames being corrupted when filtering consent log exports or deletions.
+
 ## 1.0.1 - 2026-09-03
 
 ### Changed
