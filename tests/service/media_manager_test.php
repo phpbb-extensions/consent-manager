@@ -108,6 +108,11 @@ class media_manager_test extends \phpbb_test_case
 		$configurator = new \s9e\TextFormatter\Configurator();
 		$configurator->plugins->load('MediaEmbed');
 		$configurator->MediaEmbed->add('youtube');
+		$configurator->tags['YOUTUBE']->template = str_replace(
+			'data-s9e-mediaembed="youtube"',
+			'data-s9e-mediaembed="youtube" data-mediaembed-shorts="1"',
+			(string) $configurator->tags['YOUTUBE']->template
+		);
 
 		$this->manager->configure_iframe_embeds($configurator);
 
@@ -119,7 +124,8 @@ class media_manager_test extends \phpbb_test_case
 		self::assertStringContainsString('data-consent-media-placeholder="1"', $template);
 		self::assertStringContainsString('data-consent-link="{.}"', $template);
 		self::assertStringContainsString('data-consent-media-frame="1"', $template);
-		self::assertSame(2, substr_count($template, 'data-mediaembed'));
+		self::assertSame(2, preg_match_all('/(?:data-mediaembed=|name="data-mediaembed")/', $template));
+		self::assertSame(2, substr_count($template, 'data-mediaembed-shorts'));
 		self::assertStringNotContainsString('data-s9e-mediaembed', $template);
 		self::assertStringNotContainsString('$L_CONSENTMANAGER_MEDIA_PLACEHOLDER', $template);
 		self::assertStringNotContainsString('data-consent-open-settings="1"', $template);
@@ -333,7 +339,7 @@ class media_manager_test extends \phpbb_test_case
 	protected function build_strip_internal_s9e_fixture()
 	{
 		$dom = \s9e\TextFormatter\Configurator\Helpers\TemplateLoader::load(
-			'<div data-s9e-live="1" data-s9e-mediaembed="youtube">'
+			'<div data-s9e-live="1" data-s9e-mediaembed="youtube" data-mediaembed-shorts="1">'
 				. '<xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="data-s9e-test">value</xsl:attribute>'
 				. '<span><xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="data-s9e-mediaembed">youtube</xsl:attribute>inner</span>'
 			. '</div>'
@@ -347,8 +353,9 @@ class media_manager_test extends \phpbb_test_case
 		$template = \s9e\TextFormatter\Configurator\Helpers\TemplateLoader::save($dom);
 		self::assertStringNotContainsString('data-s9e-live', $template);
 		self::assertStringNotContainsString('data-s9e-test', $template);
-		self::assertSame(2, substr_count($template, 'data-mediaembed'));
+		self::assertSame(2, preg_match_all('/(?:data-mediaembed=|name="data-mediaembed")/', $template));
 		self::assertStringNotContainsString('data-s9e-mediaembed', $template);
+		self::assertStringContainsString('data-mediaembed-shorts="1"', $template);
 	}
 
 	protected function create_renderer_mock($parameter_name, $parameter_value)
