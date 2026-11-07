@@ -17,6 +17,8 @@ use s9e\TextFormatter\Configurator\Items\UnsafeTemplate;
 class media_manager
 {
 	public const MEDIA_ALLOWED_PARAMETER = 'S_CONSENTMANAGER_MEDIA_ALLOWED';
+	public const MEDIA_EMBED_ATTRIBUTE = 'data-mediaembed';
+	public const S9E_MEDIA_EMBED_ATTRIBUTE = 'data-s9e-mediaembed';
 	public const XSL_NAMESPACE = 'http://www.w3.org/1999/XSL/Transform';
 
 	/** @var consent_manager_interface */
@@ -287,6 +289,7 @@ class media_manager
 
 	/**
 	 * Remove s9e internal data attributes that are not valid in rewritten templates.
+	 * Translate the MediaEmbed site marker so compatible extensions can still target it.
 	 *
 	 * @param \DOMDocument $dom Template DOM
 	 *
@@ -305,9 +308,19 @@ class media_manager
 		{
 			if ($element->namespaceURI === self::XSL_NAMESPACE
 				&& $element->localName === 'attribute'
-				&& strpos($element->getAttribute('name'), 'data-s9e-') === 0
 			)
 			{
+				if ($element->getAttribute('name') === self::S9E_MEDIA_EMBED_ATTRIBUTE)
+				{
+					$element->setAttribute('name', self::MEDIA_EMBED_ATTRIBUTE);
+					continue;
+				}
+
+				if (strpos($element->getAttribute('name'), 'data-s9e-') !== 0)
+				{
+					continue;
+				}
+
 				$element->parentNode->removeChild($element);
 				continue;
 			}
@@ -318,6 +331,9 @@ class media_manager
 			}
 
 			$attribute_names = [];
+			$media_embed_site = $element->hasAttribute(self::S9E_MEDIA_EMBED_ATTRIBUTE)
+				? $element->getAttribute(self::S9E_MEDIA_EMBED_ATTRIBUTE)
+				: null;
 
 			foreach ($element->attributes as $attribute)
 			{
@@ -330,6 +346,11 @@ class media_manager
 			foreach ($attribute_names as $attribute_name)
 			{
 				$element->removeAttribute($attribute_name);
+			}
+
+			if ($media_embed_site !== null)
+			{
+				$element->setAttribute(self::MEDIA_EMBED_ATTRIBUTE, $media_embed_site);
 			}
 		}
 	}
