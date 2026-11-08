@@ -122,7 +122,10 @@ class listener_test extends \phpbb_test_case
 		$consent_manager->expects($invoke ? self::once() : self::never())
 			->method('has_optional_categories')
 			->willReturn(true);
-		$consent_manager_args = ['/app.php/consent/log', generate_link_hash('phpbb.consentmanager.log')];
+		$consent_manager->expects($invoke ? self::once() : self::never())
+			->method('generate_log_hash')
+			->willReturn('session-hash');
+		$consent_manager_args = ['/app.php/consent/log', 'session-hash'];
 		$consent_manager->expects($invoke ? self::once() : self::never())
 			->method('get_frontend_template_data')
 			->with(...$consent_manager_args)

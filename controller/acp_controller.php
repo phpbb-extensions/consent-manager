@@ -335,7 +335,7 @@ class acp_controller
 		return [
 			'export_date_from'       => trim($this->request->variable('export_date_from', '')),
 			'export_date_to'         => trim($this->request->variable('export_date_to', '')),
-			'export_username'        => trim($this->request->variable('export_username', '')),
+			'export_username'        => trim($this->request->variable('export_username', '', true)),
 			'export_consent_version' => $this->request->variable('export_consent_version', 0),
 		];
 	}

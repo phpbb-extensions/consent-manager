@@ -29,6 +29,7 @@ services:
             - '@template.twig.environment'
             - '@path_helper'
             - '@request'
+            - '@user'
 
     phpbb.consentmanager.log_manager:
         class: phpbb\consentmanager\service\log_manager

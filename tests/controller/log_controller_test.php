@@ -24,7 +24,6 @@ class log_controller_test extends \phpbb_test_case
 	protected function setUp(): void
 	{
 		parent::setUp();
-
 		$this->log_manager = $this->createMock('\phpbb\consentmanager\service\log_manager');
 		$this->consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
 		$this->controller = new \phpbb\consentmanager\controller\log_controller(
@@ -35,15 +34,7 @@ class log_controller_test extends \phpbb_test_case
 
 	public function test_log_rejects_invalid_json_payload()
 	{
-		$response = $this->controller->log(\Symfony\Component\HttpFoundation\Request::create(
-			'/consent/log',
-			'POST',
-			array(),
-			array(),
-			array(),
-			array(),
-			'{invalid'
-		));
+		$response = $this->controller->log($this->create_request('{invalid'));
 
 		self::assertSame(400, $response->getStatusCode());
 		self::assertSame(array(
@@ -68,7 +59,7 @@ class log_controller_test extends \phpbb_test_case
 				'error' => $submission_error,
 			));
 
-		$response = $this->controller->log(new \Symfony\Component\HttpFoundation\Request(array(), array(), array(), array(), array(), array(), json_encode(array(
+		$response = $this->controller->log($this->create_request(json_encode(array(
 			'hash' => 'bad',
 		))));
 
@@ -91,7 +82,7 @@ class log_controller_test extends \phpbb_test_case
 				'version' => 5,
 			));
 
-		$response = $this->controller->log(new \Symfony\Component\HttpFoundation\Request(array(), array(), array(), array(), array(), array(), json_encode(array(
+		$response = $this->controller->log($this->create_request(json_encode(array(
 			'hash' => 'good',
 			'version' => 5,
 			'categories' => array('analytics'),
@@ -120,7 +111,7 @@ class log_controller_test extends \phpbb_test_case
 				'version' => 5,
 			));
 
-		$response = $this->controller->log(new \Symfony\Component\HttpFoundation\Request(array(), array(), array(), array(), array(), array(), '{}'));
+		$response = $this->controller->log($this->create_request('{}'));
 
 		self::assertSame(200, $response->getStatusCode());
 		self::assertSame(array(
@@ -137,6 +128,37 @@ class log_controller_test extends \phpbb_test_case
 			'invalid hash' => array('invalid_hash', 403),
 			'version mismatch' => array('version_mismatch', 409),
 			'generic invalid payload' => array('invalid_payload', 400),
+		);
+	}
+
+	public function test_log_rejects_non_json_content_type()
+	{
+		$this->consent_manager->expects(self::never())
+			->method('validate_log_payload');
+
+		$response = $this->controller->log($this->create_request('{}', array(
+			'CONTENT_TYPE' => 'text/plain',
+		)));
+
+		self::assertSame(415, $response->getStatusCode());
+		self::assertSame('unsupported_media_type', json_decode($response->getContent(), true)['error']);
+	}
+
+	protected function create_request($body, array $server = array())
+	{
+		$defaults = array(
+			'HTTP_HOST' => 'example.com',
+			'HTTPS' => 'on',
+			'CONTENT_TYPE' => 'application/json',
+		);
+		return \Symfony\Component\HttpFoundation\Request::create(
+			'https://example.com/consent/log',
+			'POST',
+			array(),
+			array(),
+			array(),
+			array_merge($defaults, $server),
+			$body
 		);
 	}
 }

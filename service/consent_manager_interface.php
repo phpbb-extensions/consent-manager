@@ -54,6 +54,13 @@ interface consent_manager_interface
 	public function validate_log_payload(array $payload);
 
 	/**
+	 * Generate a session-bound token for frontend consent logging.
+	 *
+	 * @return string
+	 */
+	public function generate_log_hash();
+
+	/**
 	 * Build the JSON payload consumed by the frontend app.
 	 *
 	 * @param string $log_url Consent logging endpoint URL

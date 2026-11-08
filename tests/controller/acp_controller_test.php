@@ -767,6 +767,38 @@ class acp_controller_test extends \phpbb_test_case
 		];
 	}
 
+	public function test_logs_form_reads_username_as_multibyte_input()
+	{
+		$request = $this->getMockBuilder('\phpbb\request\request')
+			->disableOriginalConstructor()
+			->setMethods(['variable'])
+			->getMock();
+		$request->expects(self::exactly(4))
+			->method('variable')
+			->willReturnCallback(function ($name, $default, $multibyte = false) {
+				if ($name === 'export_username')
+				{
+					self::assertTrue($multibyte);
+					return ' Jörg你好 ';
+				}
+
+				return $default;
+			});
+
+		global $phpbb_root_path, $phpEx;
+		$controller = new testable_acp_controller(
+			$this->language,
+			$this->acp_manager,
+			$this->translation_manager,
+			$request,
+			$this->template,
+			$phpbb_root_path,
+			$phpEx
+		);
+
+		self::assertSame('Jörg你好', $controller->get_logs_form_data_for_test()['export_username']);
+	}
+
 	protected function create_request_mock(array $values = [], array $raw_values = [])
 	{
 		$request = $this->getMockBuilder('\phpbb\request\request')
@@ -829,6 +861,11 @@ class testable_acp_controller extends \phpbb\consentmanager\controller\acp_contr
 	public function create_csv_response_for_test(array $filters)
 	{
 		return $this->create_csv_response($filters);
+	}
+
+	public function get_logs_form_data_for_test()
+	{
+		return $this->get_logs_form_data();
 	}
 }
 

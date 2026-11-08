@@ -18,6 +18,7 @@ use phpbb\path_helper;
 use phpbb\request\request_interface;
 use phpbb\template\asset;
 use phpbb\template\twig\environment;
+use phpbb\user;
 use Twig\Error\LoaderError;
 
 class consent_manager implements consent_manager_interface
@@ -51,6 +52,9 @@ class consent_manager implements consent_manager_interface
 
 	/** @var request_interface */
 	protected $request;
+
+	/** @var user */
+	protected $user;
 
 	/** @var array */
 	protected $registrations = [];
@@ -88,8 +92,9 @@ class consent_manager implements consent_manager_interface
 	 * @param environment          $twig_environment Twig environment
 	 * @param path_helper          $path_helper Path helper
 	 * @param request_interface    $request Request service
+	 * @param user                 $user Current user
 	 */
-	public function __construct(consent_cache $consent_cache, translation_manager $translation_manager, config $config, db_text $config_text, language $language, dispatcher_interface $dispatcher, environment $twig_environment, path_helper $path_helper, request_interface $request)
+	public function __construct(consent_cache $consent_cache, translation_manager $translation_manager, config $config, db_text $config_text, language $language, dispatcher_interface $dispatcher, environment $twig_environment, path_helper $path_helper, request_interface $request, user $user)
 	{
 		$this->consent_cache = $consent_cache;
 		$this->translation_manager = $translation_manager;
@@ -100,6 +105,7 @@ class consent_manager implements consent_manager_interface
 		$this->twig_environment = $twig_environment;
 		$this->path_helper = $path_helper;
 		$this->request = $request;
+		$this->user = $user;
 	}
 
 	/**
@@ -260,7 +266,8 @@ class consent_manager implements consent_manager_interface
 	public function validate_log_payload(array $payload)
 	{
 		$hash = isset($payload['hash']) ? (string) $payload['hash'] : '';
-		if (!check_link_hash($hash, 'phpbb.consentmanager.log'))
+		$expected_hash = $this->generate_log_hash();
+		if (strlen($hash) !== 64 || $expected_hash === '' || !hash_equals($expected_hash, $hash))
 		{
 			return [
 				'success' => false,
@@ -284,6 +291,23 @@ class consent_manager implements consent_manager_interface
 			),
 			'version' => $version,
 		];
+	}
+
+	/**
+	 * Generate a session-bound token for frontend consent logging.
+	 *
+	 * @return string Empty when no session is available
+	 */
+	public function generate_log_hash()
+	{
+		if (empty($this->user->session_id) || empty($this->config['consentmanager_hmac_secret']))
+		{
+			return '';
+		}
+
+		$subject = 'consent-log:u:' . (int) $this->user->data['user_id'] . ':s:' . $this->user->session_id;
+
+		return hash_hmac('sha256', $subject, $this->config['consentmanager_hmac_secret']);
 	}
 
 	/**

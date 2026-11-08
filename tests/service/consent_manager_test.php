@@ -51,11 +51,12 @@ class consent_manager_test extends \phpbb_test_case
 			$phpEx
 		);
 
-		$user = new \phpbb_mock_user();
+		$user = new \phpbb\user($this->language, '\phpbb\datetime');
 		$user->data = array(
 			'user_id' => ANONYMOUS,
 			'user_form_salt' => 'consent-salt',
 		);
+		$user->session_id = 'guest-session';
 	}
 
 	public function test_public_metadata_methods()
@@ -950,7 +951,7 @@ class consent_manager_test extends \phpbb_test_case
 		));
 
 		$submission = $manager->validate_log_payload(array(
-			'hash' => generate_link_hash('phpbb.consentmanager.log'),
+			'hash' => $manager->generate_log_hash(),
 			'version' => 4,
 			'categories' => array('analytics', 'necessary', 'marketing', 'analytics'),
 		));
@@ -958,6 +959,16 @@ class consent_manager_test extends \phpbb_test_case
 		self::assertTrue($submission['success']);
 		self::assertSame(array('necessary', 'analytics'), $submission['categories']);
 		self::assertSame(4, $submission['version']);
+	}
+
+	public function test_generate_log_hash_uses_session_and_user_bound_hmac()
+	{
+		$manager = $this->get_manager();
+
+		self::assertSame(
+			hash_hmac('sha256', 'consent-log:u:' . ANONYMOUS . ':s:guest-session', 'consent-secret'),
+			$manager->generate_log_hash()
+		);
 	}
 
 	public function test_validate_log_payload_rejects_invalid_hash()
@@ -976,10 +987,11 @@ class consent_manager_test extends \phpbb_test_case
 
 	public function test_validate_log_payload_rejects_version_mismatch()
 	{
-		$submission = $this->get_manager(array(
+		$manager = $this->get_manager(array(
 			'consentmanager_consent_version' => 9,
-		))->validate_log_payload(array(
-			'hash' => generate_link_hash('phpbb.consentmanager.log'),
+		));
+		$submission = $manager->validate_log_payload(array(
+			'hash' => $manager->generate_log_hash(),
 			'version' => 1,
 			'categories' => array('analytics'),
 		));
@@ -988,6 +1000,74 @@ class consent_manager_test extends \phpbb_test_case
 			'success' => false,
 			'error' => 'version_mismatch',
 		), $submission);
+	}
+
+	public function test_validate_log_payload_rejects_hash_from_another_session()
+	{
+		global $user;
+
+		$manager = $this->get_manager();
+		$hash = $manager->generate_log_hash();
+		$user->session_id = 'another-guest-session';
+
+		self::assertSame(array(
+			'success' => false,
+			'error' => 'invalid_hash',
+		), $manager->validate_log_payload(array(
+			'hash' => $hash,
+			'version' => 1,
+			'categories' => array('analytics'),
+		)));
+	}
+
+	public function test_log_hash_fails_closed_without_session()
+	{
+		global $user;
+
+		$user->session_id = '';
+		$manager = $this->get_manager();
+
+		self::assertSame('', $manager->generate_log_hash());
+		self::assertSame(array(
+			'success' => false,
+			'error' => 'invalid_hash',
+		), $manager->validate_log_payload(array(
+			'hash' => 'token',
+			'version' => 1,
+		)));
+	}
+
+	public function test_validate_log_payload_rejects_hash_from_another_user()
+	{
+		global $user;
+
+		$manager = $this->get_manager();
+		$hash = $manager->generate_log_hash();
+		$user->data['user_id'] = 42;
+
+		self::assertSame(array(
+			'success' => false,
+			'error' => 'invalid_hash',
+		), $manager->validate_log_payload(array(
+			'hash' => $hash,
+			'version' => 1,
+		)));
+	}
+
+	public function test_log_hash_fails_closed_without_hmac_secret()
+	{
+		$manager = $this->get_manager(array(
+			'consentmanager_hmac_secret' => '',
+		));
+
+		self::assertSame('', $manager->generate_log_hash());
+		self::assertSame(array(
+			'success' => false,
+			'error' => 'invalid_hash',
+		), $manager->validate_log_payload(array(
+			'hash' => str_repeat('a', 64),
+			'version' => 1,
+		)));
 	}
 
 	public function test_has_server_consent_accepts_valid_cookie_and_normalizes_categories()
@@ -1192,6 +1272,7 @@ class consent_manager_test extends \phpbb_test_case
 			'consentmanager_consent_version' => 1,
 			'assets_version' => '42',
 			'rand_seed' => 'seed',
+			'consentmanager_hmac_secret' => 'consent-secret',
 		), $config_values));
 
 		if ($twig_environment === null)
@@ -1238,6 +1319,7 @@ class consent_manager_test extends \phpbb_test_case
 			$twig_environment,
 			$this->path_helper,
 			$request,
+			$GLOBALS['user'],
 		];
 	}
 

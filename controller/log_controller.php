@@ -45,6 +45,14 @@ class log_controller
 	 */
 	public function log(Request $request)
 	{
+		if ($request->getContentType() !== 'json')
+		{
+			return new JsonResponse([
+				'success' => false,
+				'error' => 'unsupported_media_type',
+			], Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
+		}
+
 		$payload = json_decode($request->getContent(), true);
 
 		if (!is_array($payload))

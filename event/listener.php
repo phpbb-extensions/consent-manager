@@ -116,7 +116,7 @@ class listener implements EventSubscriberInterface
 		$this->language->add_lang('common', 'phpbb/consentmanager');
 		$this->template->assign_vars($this->consent_manager->get_frontend_template_data(
 			$this->helper->route('phpbb_consentmanager_log_controller'),
-			generate_link_hash('phpbb.consentmanager.log')
+			$this->consent_manager->generate_log_hash()
 		));
 
 		foreach ($this->consent_manager->get_frontend_category_data() as $category)
