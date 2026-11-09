@@ -309,7 +309,7 @@
 	}
 
 	function buildGoogleConsentModeState() {
-		const consentState = Object.create(null);
+		const consentState = {};
 
 		if (!googleConsentMode.enabled) {
 			return consentState;

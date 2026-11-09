@@ -175,6 +175,10 @@ function setupConsentManager(options) {
 	if (settings.withGtag) {
 		window.gtagCalls = gtagCalls;
 		window.gtag = function() {
+			const consentState = arguments[2];
+			if (consentState && typeof consentState.hasOwnProperty !== 'function') {
+				throw new TypeError('Google Consent Mode requires a plain state object.');
+			}
 			gtagCalls.push(Array.prototype.slice.call(arguments));
 		};
 	}
@@ -412,7 +416,7 @@ test('marks the consent cookie secure only on HTTPS', () => {
 });
 
 test('updates Google consent mode before activating newly consented marketing scripts', () => {
-	const { window, gtagCalls } = setupConsentManager({
+	const { window, document, gtagCalls } = setupConsentManager({
 		withGtag: true,
 		extraMarkup: `
 			<script type="text/plain" data-consent-category="marketing">
@@ -421,8 +425,10 @@ test('updates Google consent mode before activating newly consented marketing sc
 		`
 	});
 
+	window.consentManager.openSettings();
 	click(window, '[data-consent-action="accept-all"]');
 
+	expect(document.getElementById('consent-manager-modal').hidden).toBe(true);
 	expect(gtagCalls[0]).toEqual([
 		'consent',
 		'update',
