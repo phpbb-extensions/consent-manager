@@ -141,6 +141,13 @@ interface consent_manager_interface
 	public function has_optional_categories();
 
 	/**
+	 * Determine whether active integrations provide frontend scripts.
+	 *
+	 * @return bool
+	 */
+	public function has_frontend_scripts();
+
+	/**
 	 * Determine whether a previously stored consent cookie currently grants a category.
 	 *
 	 * @param string $category Category identifier

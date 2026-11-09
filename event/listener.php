@@ -108,7 +108,13 @@ class listener implements EventSubscriberInterface
 	 */
 	public function inject_frontend()
 	{
-		if ($this->is_acp_or_installer() || !$this->consent_manager->has_optional_categories())
+		if ($this->is_acp_or_installer())
+		{
+			return;
+		}
+
+		$has_optional_categories = $this->consent_manager->has_optional_categories();
+		if (!$has_optional_categories && !$this->consent_manager->has_frontend_scripts())
 		{
 			return;
 		}
@@ -118,6 +124,11 @@ class listener implements EventSubscriberInterface
 			$this->helper->route('phpbb_consentmanager_log_controller'),
 			$this->consent_manager->generate_log_hash()
 		));
+
+		if (!$has_optional_categories)
+		{
+			return;
+		}
 
 		foreach ($this->consent_manager->get_frontend_category_data() as $category)
 		{

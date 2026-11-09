@@ -189,14 +189,16 @@ class consent_manager implements consent_manager_interface
 	{
 		$categories = $this->get_category_config();
 		$has_optional_categories = !empty($this->get_optional_category_ids($categories));
-		$payload = $has_optional_categories ? $this->build_frontend_payload($log_url, $log_hash) : '';
+		$runtime_enabled = $has_optional_categories || $this->has_frontend_scripts();
+		$payload = $runtime_enabled ? $this->build_frontend_payload($log_url, $log_hash) : '';
 
 		$vars = [
 			'S_CONSENTMANAGER_ENABLED'				=> $has_optional_categories,
+			'S_CONSENTMANAGER_RUNTIME_ENABLED'	=> $runtime_enabled,
 			'S_CONSENTMANAGER_ANALYTICS_ENABLED'	=> !empty($categories[self::ANALYTICS_CATEGORY]['enabled']),
 			'S_CONSENTMANAGER_MARKETING_ENABLED'	=> !empty($categories[self::MARKETING_CATEGORY]['enabled']),
 			'S_CONSENTMANAGER_MEDIA_ENABLED'		=> !empty($categories[self::MEDIA_CATEGORY]['enabled']),
-			'CONSENTMANAGER_PAYLOAD'				=> $has_optional_categories ? json_encode($payload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) : '',
+			'CONSENTMANAGER_PAYLOAD'				=> $runtime_enabled ? json_encode($payload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) : '',
 		];
 
 		if ($has_optional_categories)
@@ -612,6 +614,24 @@ class consent_manager implements consent_manager_interface
 	public function has_optional_categories()
 	{
 		return !empty($this->get_optional_category_ids($this->get_category_config()));
+	}
+
+	/**
+	 * Determine whether active integrations provide frontend scripts.
+	 *
+	 * @return bool
+	 */
+	public function has_frontend_scripts()
+	{
+		foreach ($this->get_services() as $service)
+		{
+			if (!empty($service['scripts']))
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**

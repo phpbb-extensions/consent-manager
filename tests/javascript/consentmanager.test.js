@@ -45,12 +45,13 @@ function createLang(overrides) {
 	}, overrides || {});
 }
 
-function createMarkup(extraMarkup) {
+function createMarkup(extraMarkup, withoutUi) {
 	return `
 		<!doctype html>
 		<html>
 			<head></head>
 			<body>
+				${withoutUi ? '' : `
 				<div id="consent-manager-root">
 					<div id="consent-manager-banner" hidden></div>
 					<a id="consent-manager-link" href="#">Privacy settings</a>
@@ -68,6 +69,7 @@ function createMarkup(extraMarkup) {
 						</div>
 					</div>
 				</div>
+				`}
 				${extraMarkup || ''}
 			</body>
 		</html>
@@ -108,7 +110,7 @@ function setupConsentManager(options) {
 	virtualConsole.on('jsdomError', (error) => {
 		jsdomErrors.push(error);
 	});
-	const dom = new JSDOM(createMarkup(settings.extraMarkup), {
+	const dom = new JSDOM(createMarkup(settings.extraMarkup, settings.withoutUi), {
 		runScripts: 'dangerously',
 		url: settings.url || 'https://example.com/',
 		virtualConsole
@@ -284,6 +286,37 @@ test('replays queued API calls and executes consented registered scripts', () =>
 	expect(window.analyticsCounter).toBe(1);
 	expect(ready).toHaveBeenCalledTimes(1);
 	expect(ready).toHaveBeenCalledWith(window.consentManager);
+});
+
+test('executes necessary scripts without consent UI or stored state', () => {
+	const { window, document, payload, requests } = setupConsentManager({
+		withoutUi: true,
+		payload: {
+			categories: [
+				{ id: 'necessary', enabled: true, required: true }
+			],
+			requiredCategories: [ 'necessary' ],
+			enabledCategories: [ 'necessary' ],
+			optionalCategories: [],
+			googleConsentMode: {
+				enabled: false,
+				types: {}
+			},
+			scripts: [
+				{
+					id: 'necessary-inline',
+					category: 'necessary',
+					inline: 'window.necessaryScriptLoaded = true;'
+				}
+			]
+		}
+	});
+
+	expect(window.necessaryScriptLoaded).toBe(true);
+	expect(document.getElementById('consent-manager-root')).toBeNull();
+	expect(window.localStorage.getItem(payload.storageKey)).toBeNull();
+	expect(getCookieValue(document, payload.cookieName)).toBe('');
+	expect(requests).toHaveLength(0);
 });
 
 test('accept-all persists consent, logs the decision, and updates the UI state', () => {

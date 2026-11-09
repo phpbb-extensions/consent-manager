@@ -43,6 +43,41 @@ class frontend_test extends functional_base
 		$this->assertStringContainsString('/consent/log', $payload['logEndpoint']);
 	}
 
+	public function test_necessary_integration_loads_without_optional_consent_ui()
+	{
+		$this->db->sql_query('UPDATE ' . CONFIG_TABLE . "
+			SET config_value = '0'
+			WHERE " . $this->db->sql_in_set('config_name', array(
+				'consentmanager_analytics_enabled',
+				'consentmanager_marketing_enabled',
+				'consentmanager_media_enabled',
+			))
+		);
+		$integrations = json_encode(array(array(
+			'id' => 'board.necessary',
+			'category' => 'necessary',
+			'label' => 'Board Necessary',
+			'description' => 'Required board behavior.',
+			'src' => 'https://cdn.example.com/necessary.js',
+		)));
+		$this->db->sql_query('UPDATE ' . CONFIG_TEXT_TABLE . "
+			SET config_value = '" . $this->db->sql_escape($integrations) . "'
+			WHERE config_name = 'consentmanager_integrations'");
+		$this->purge_cache();
+
+		self::request('GET', 'index.php');
+		$content = self::get_content();
+		$payload = $this->extract_payload($content);
+
+		$this->assertSame(array(), $payload['optionalCategories']);
+		$this->assertSame(array('necessary'), $payload['requiredCategories']);
+		$this->assertSame(array('board.necessary'), array_column($payload['scripts'], 'id'));
+		$this->assertStringContainsString('consentmanager.js', $content);
+		$this->assertStringNotContainsString('consentmanager.css', $content);
+		$this->assertStringNotContainsString('consent-manager-root', $content);
+		$this->assertStringNotContainsString('consent-manager-link-item', $content);
+	}
+
 	public function test_frontend_escapes_integration_label_and_description()
 	{
 		$label = '<script>alert(1)</script>';

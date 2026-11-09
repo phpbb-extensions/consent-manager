@@ -664,6 +664,7 @@ class consent_manager_test extends \phpbb_test_case
 		$payload = json_decode($data['CONSENTMANAGER_PAYLOAD'], true);
 
 		self::assertTrue($data['S_CONSENTMANAGER_ENABLED']);
+		self::assertTrue($data['S_CONSENTMANAGER_RUNTIME_ENABLED']);
 		self::assertTrue($data['S_CONSENTMANAGER_ANALYTICS_ENABLED']);
 		self::assertTrue($data['S_CONSENTMANAGER_MEDIA_ENABLED']);
 		self::assertTrue($data['S_CONSENTMANAGER_MARKETING_ENABLED']);
@@ -698,12 +699,54 @@ class consent_manager_test extends \phpbb_test_case
 		$data = $manager->get_frontend_template_data('/app.php/consent/log', 'abc123');
 
 		self::assertFalse($data['S_CONSENTMANAGER_ENABLED']);
+		self::assertFalse($data['S_CONSENTMANAGER_RUNTIME_ENABLED']);
 		self::assertFalse($data['S_CONSENTMANAGER_ANALYTICS_ENABLED']);
 		self::assertFalse($data['S_CONSENTMANAGER_MARKETING_ENABLED']);
 		self::assertFalse($data['S_CONSENTMANAGER_MEDIA_ENABLED']);
 		self::assertSame('', $data['CONSENTMANAGER_PAYLOAD']);
 		self::assertArrayNotHasKey('S_COOKIE_NOTICE', $data);
 		self::assertArrayNotHasKey('CONSENTMANAGER_BANNER_TITLE', $data);
+	}
+
+	public function test_get_frontend_template_data_keeps_necessary_scripts_without_optional_categories()
+	{
+		$dispatcher = $this->get_collect_registrations_dispatcher(function ($data) {
+			$data['consent_manager']->register('vendor.necessary', array(
+				'category' => 'necessary',
+				'inline' => 'window.vendorNecessary = true;',
+			));
+
+			return $data;
+		});
+		$manager = $this->get_manager(array(
+			'consentmanager_analytics_enabled' => 0,
+			'consentmanager_marketing_enabled' => 0,
+			'consentmanager_media_enabled' => 0,
+		), '', $dispatcher);
+
+		self::assertTrue($manager->has_frontend_scripts());
+
+		$data = $manager->get_frontend_template_data('/app.php/consent/log', 'abc123');
+		$payload = json_decode($data['CONSENTMANAGER_PAYLOAD'], true);
+
+		self::assertFalse($data['S_CONSENTMANAGER_ENABLED']);
+		self::assertTrue($data['S_CONSENTMANAGER_RUNTIME_ENABLED']);
+		self::assertSame(array(), $payload['optionalCategories']);
+		self::assertSame(array('necessary'), $payload['requiredCategories']);
+		self::assertSame(array('vendor.necessary'), array_column($payload['scripts'], 'id'));
+		self::assertArrayNotHasKey('S_COOKIE_NOTICE', $data);
+		self::assertArrayNotHasKey('CONSENTMANAGER_BANNER_TITLE', $data);
+	}
+
+	public function test_has_frontend_scripts_ignores_disabled_integrations()
+	{
+		$manager = $this->get_manager(array(
+			'consentmanager_analytics_enabled' => 0,
+			'consentmanager_marketing_enabled' => 0,
+			'consentmanager_media_enabled' => 0,
+		), $this->get_submitted_integrations_json());
+
+		self::assertFalse($manager->has_frontend_scripts());
 	}
 
 	public function test_has_frontend_ui_returns_false_without_optional_categories()

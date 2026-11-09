@@ -1,5 +1,7 @@
 {% if S_CONSENTMANAGER_ENABLED %}
 	{% INCLUDECSS '@phpbb_consentmanager/consentmanager.css' %}
+{% endif %}
+{% if S_CONSENTMANAGER_RUNTIME_ENABLED %}
 	<script>
 	(function (window, document) {
 		const payload = {{ CONSENTMANAGER_PAYLOAD|raw }};

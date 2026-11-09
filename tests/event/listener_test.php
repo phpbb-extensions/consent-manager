@@ -221,6 +221,9 @@ class listener_test extends \phpbb_test_case
 		$consent_manager->expects(self::once())
 			->method('has_optional_categories')
 			->willReturn(false);
+		$consent_manager->expects(self::once())
+			->method('has_frontend_scripts')
+			->willReturn(false);
 		$consent_manager->expects(self::never())
 			->method('get_frontend_template_data');
 		$consent_manager->expects(self::never())
@@ -229,6 +232,60 @@ class listener_test extends \phpbb_test_case
 		$template = $this->createMock('\phpbb\template\template');
 		$template->expects(self::never())
 			->method('assign_vars');
+		$template->expects(self::never())
+			->method('assign_block_vars');
+
+		$listener = new class($helper, $this->language, $consent_manager, $template, $this->media_manager) extends \phpbb\consentmanager\event\listener {
+			protected function is_acp_or_installer()
+			{
+				return false;
+			}
+		};
+
+		$listener->inject_frontend();
+	}
+
+	public function test_inject_frontend_assigns_runtime_without_category_blocks_for_necessary_scripts()
+	{
+		$helper = $this->createMock('\phpbb\controller\helper');
+		$helper->expects(self::once())
+			->method('route')
+			->with('phpbb_consentmanager_log_controller')
+			->willReturn('/app.php/consent/log');
+
+		$this->language->expects(self::once())
+			->method('add_lang')
+			->with('common', 'phpbb/consentmanager');
+
+		$consent_manager = $this->createMock('\phpbb\consentmanager\service\consent_manager_interface');
+		$consent_manager->expects(self::once())
+			->method('has_optional_categories')
+			->willReturn(false);
+		$consent_manager->expects(self::once())
+			->method('has_frontend_scripts')
+			->willReturn(true);
+		$consent_manager->expects(self::once())
+			->method('generate_log_hash')
+			->willReturn('session-hash');
+		$consent_manager->expects(self::once())
+			->method('get_frontend_template_data')
+			->with('/app.php/consent/log', 'session-hash')
+			->willReturn([
+				'S_CONSENTMANAGER_ENABLED' => false,
+				'S_CONSENTMANAGER_RUNTIME_ENABLED' => true,
+				'CONSENTMANAGER_PAYLOAD' => '{"version":1}',
+			]);
+		$consent_manager->expects(self::never())
+			->method('get_frontend_category_data');
+
+		$template = $this->createMock('\phpbb\template\template');
+		$template->expects(self::once())
+			->method('assign_vars')
+			->with([
+				'S_CONSENTMANAGER_ENABLED' => false,
+				'S_CONSENTMANAGER_RUNTIME_ENABLED' => true,
+				'CONSENTMANAGER_PAYLOAD' => '{"version":1}',
+			]);
 		$template->expects(self::never())
 			->method('assign_block_vars');
 
