@@ -771,7 +771,7 @@ class acp_controller_test extends \phpbb_test_case
 	{
 		$request = $this->getMockBuilder('\phpbb\request\request')
 			->disableOriginalConstructor()
-			->setMethods(['variable'])
+			->onlyMethods(['variable'])
 			->getMock();
 		$request->expects(self::exactly(4))
 			->method('variable')

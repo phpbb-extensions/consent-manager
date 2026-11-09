@@ -45,7 +45,7 @@ class log_controller
 	 */
 	public function log(Request $request)
 	{
-		if ($request->getContentType() !== 'json')
+		if ($request->getContentTypeFormat() !== 'json')
 		{
 			return new JsonResponse([
 				'success' => false,
