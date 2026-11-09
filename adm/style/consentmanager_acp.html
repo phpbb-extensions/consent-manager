@@ -118,8 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	var textarea = document.getElementById('consentmanager_integrations');
 	var warning = document.getElementById('consentmanager_integrations_warning');
 
-	if (!textarea || !warning)
-	{
+	if (!textarea || !warning) {
 		return;
 	}
 
@@ -127,18 +126,14 @@ document.addEventListener('DOMContentLoaded', function() {
 		var value = textarea.value.trim();
 		var isValidArray = false;
 
-		if (value === '')
-		{
+		if (value === '') {
 			warning.style.display = 'none';
 			return;
 		}
 
-		try
-		{
+		try {
 			isValidArray = Array.isArray(JSON.parse(value));
-		}
-		catch (error)
-		{
+		} catch (error) {
 			isValidArray = false;
 		}
 

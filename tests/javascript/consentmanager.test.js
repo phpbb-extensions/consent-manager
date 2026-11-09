@@ -185,6 +185,8 @@ function setupConsentManager(options) {
 
 	if (settings.cookieState) {
 		window.document.cookie = payload.cookieName + '=' + encodeURIComponent(JSON.stringify(settings.cookieState));
+	} else if (settings.rawCookieValue) {
+		window.document.cookie = payload.cookieName + '=' + settings.rawCookieValue;
 	}
 
 	if (settings.withJquery) {
@@ -264,6 +266,29 @@ test('prefers the newest stored state and synchronizes cookie and local storage'
 	expect(JSON.parse(getCookieValue(document, payload.cookieName))).toEqual(cookieState);
 });
 
+test('repairs malformed cookie encoding from valid local storage', () => {
+	const localState = createState([ 'necessary', 'analytics' ], '2026-04-28T00:00:00.000Z');
+	const { window, document, payload, jsdomErrors } = setupConsentManager({
+		localState,
+		rawCookieValue: '%E0%A4%A'
+	});
+
+	expect(window.consentManager.getState()).toEqual(localState);
+	expect(JSON.parse(getCookieValue(document, payload.cookieName))).toEqual(localState);
+	expect(jsdomErrors).toHaveLength(0);
+});
+
+test('clears malformed cookie encoding and initializes without stored state', () => {
+	const { window, document, payload, jsdomErrors } = setupConsentManager({
+		rawCookieValue: '%E0%A4%A'
+	});
+
+	expect(window.consentManager.getState()).toBeNull();
+	expect(getCookieValue(document, payload.cookieName)).toBe('');
+	expect(document.getElementById('consent-manager-banner').hidden).toBe(false);
+	expect(jsdomErrors).toHaveLength(0);
+});
+
 test('replays queued API calls and executes consented registered scripts', () => {
 	const ready = jest.fn();
 	const { window } = setupConsentManager({
@@ -286,6 +311,29 @@ test('replays queued API calls and executes consented registered scripts', () =>
 	expect(window.analyticsCounter).toBe(1);
 	expect(ready).toHaveBeenCalledTimes(1);
 	expect(ready).toHaveBeenCalledWith(window.consentManager);
+});
+
+test('executes scripts whose ids match inherited object properties', () => {
+	const { window, jsdomErrors } = setupConsentManager({
+		payload: {
+			scripts: [
+				{
+					id: 'hasOwnProperty',
+					category: 'necessary',
+					inline: 'window.hasOwnPropertyScriptCount = (window.hasOwnPropertyScriptCount || 0) + 1;'
+				},
+				{
+					id: 'constructor',
+					category: 'necessary',
+					inline: 'window.constructorScriptCount = (window.constructorScriptCount || 0) + 1;'
+				}
+			]
+		}
+	});
+
+	expect(window.hasOwnPropertyScriptCount).toBe(1);
+	expect(window.constructorScriptCount).toBe(1);
+	expect(jsdomErrors).toHaveLength(0);
 });
 
 test('executes necessary scripts without consent UI or stored state', () => {
@@ -458,6 +506,17 @@ test('registerScript blocks unsafe sources and executes safe inline scripts', ()
 	const asyncDeferredScript = document.head.querySelector('script[src="/assets/async-deferred.js"]');
 	expect(asyncDeferredScript.async).toBe(true);
 	expect(asyncDeferredScript.defer).toBe(true);
+
+	expect(window.consentManager.registerScript('reserved-attribute', {
+		category: 'analytics',
+		inline: 'window.reservedAttributeLoaded = true;',
+		attributes: {
+			hasOwnProperty: 'value',
+			'data-safe': 'yes'
+		}
+	})).toBe(true);
+	expect(window.reservedAttributeLoaded).toBe(true);
+	expect(document.head.querySelector('script[data-safe="yes"]')).not.toBeNull();
 });
 
 test('processes deferred consent scripts and copies only safe attributes', () => {

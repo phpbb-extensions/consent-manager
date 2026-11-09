@@ -880,7 +880,7 @@ class consent_manager_test extends \phpbb_test_case
 
 		self::assertSame(
 			array('necessary', 'analytics', 'media'),
-			$manager->normalize_categories(array('analytics', 'necessary', 'media', 'marketing', 'analytics', 'unknown'))
+			$manager->normalize_categories(array('analytics', 'necessary', 'media', 'marketing', 'analytics', 'unknown', array('media'), 42))
 		);
 	}
 
@@ -1026,6 +1026,40 @@ class consent_manager_test extends \phpbb_test_case
 			'success' => false,
 			'error' => 'invalid_hash',
 		), $submission);
+	}
+
+	/**
+	 * @dataProvider malformed_log_payload_data
+	 */
+	public function test_validate_log_payload_rejects_malformed_field_types($field, $value)
+	{
+		$manager = $this->get_manager();
+		$payload = array(
+			'hash' => $manager->generate_log_hash(),
+			'version' => 1,
+			'categories' => array('analytics'),
+		);
+		$payload[$field] = $value;
+
+		self::assertSame(array(
+			'success' => false,
+			'error' => 'invalid_payload',
+		), $manager->validate_log_payload($payload));
+	}
+
+	public function malformed_log_payload_data()
+	{
+		return array(
+			'array hash' => array('hash', array()),
+			'null hash' => array('hash', null),
+			'array version' => array('version', array(1)),
+			'string version' => array('version', '1'),
+			'null version' => array('version', null),
+			'scalar categories' => array('categories', 'analytics'),
+			'null categories' => array('categories', null),
+			'nested category array' => array('categories', array(array('analytics'))),
+			'numeric category' => array('categories', array(1)),
+		);
 	}
 
 	public function test_validate_log_payload_rejects_version_mismatch()
@@ -1201,6 +1235,26 @@ class consent_manager_test extends \phpbb_test_case
 				json_encode([
 					'categories' => 'analytics',
 					'version' => 2,
+				]),
+				[
+					'consentmanager_consent_version' => 2,
+				],
+				'analytics',
+			],
+			'nested category value' => [
+				json_encode([
+					'categories' => [['analytics']],
+					'version' => 2,
+				]),
+				[
+					'consentmanager_consent_version' => 2,
+				],
+				'analytics',
+			],
+			'string version' => [
+				json_encode([
+					'categories' => ['analytics'],
+					'version' => '2',
 				]),
 				[
 					'consentmanager_consent_version' => 2,

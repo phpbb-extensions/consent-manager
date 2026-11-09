@@ -267,9 +267,17 @@ class consent_manager implements consent_manager_interface
 	 */
 	public function validate_log_payload(array $payload)
 	{
-		$hash = isset($payload['hash']) ? (string) $payload['hash'] : '';
+		if (!isset($payload['hash']) || !is_string($payload['hash']))
+		{
+			return [
+				'success' => false,
+				'error' => 'invalid_payload',
+			];
+		}
+
+		$hash = $payload['hash'];
 		$expected_hash = $this->generate_log_hash();
-		if (strlen($hash) !== 64 || $expected_hash === '' || !hash_equals($expected_hash, $hash))
+		if ($expected_hash === '' || strlen($hash) !== 64 || !hash_equals($expected_hash, $hash))
 		{
 			return [
 				'success' => false,
@@ -277,7 +285,18 @@ class consent_manager implements consent_manager_interface
 			];
 		}
 
-		$version = isset($payload['version']) ? (int) $payload['version'] : 0;
+		if (!isset($payload['version'], $payload['categories'])
+			|| !is_int($payload['version'])
+			|| !is_array($payload['categories'])
+			|| !$this->contains_only_strings($payload['categories']))
+		{
+			return [
+				'success' => false,
+				'error' => 'invalid_payload',
+			];
+		}
+
+		$version = $payload['version'];
 		if ($version !== $this->get_version())
 		{
 			return [
@@ -288,9 +307,7 @@ class consent_manager implements consent_manager_interface
 
 		return [
 			'success' => true,
-			'categories' => $this->normalize_categories(
-				isset($payload['categories']) && is_array($payload['categories']) ? $payload['categories'] : []
-			),
+			'categories' => $this->normalize_categories($payload['categories']),
 			'version' => $version,
 		];
 	}
@@ -553,7 +570,12 @@ class consent_manager implements consent_manager_interface
 
 		foreach ($categories as $category)
 		{
-			$category = trim((string) $category);
+			if (!is_string($category))
+			{
+				continue;
+			}
+
+			$category = trim($category);
 			if ($category !== self::NECESSARY_CATEGORY && $this->is_category_enabled($category))
 			{
 				$normalized[] = $category;
@@ -700,18 +722,40 @@ class consent_manager implements consent_manager_interface
 		$decoded = json_decode($raw, true);
 		if (!is_array($decoded)
 			|| !isset($decoded['version'], $decoded['categories'])
-			|| (int) $decoded['version'] !== $this->get_version()
-			|| !is_array($decoded['categories']))
+			|| !is_int($decoded['version'])
+			|| !is_array($decoded['categories'])
+			|| $decoded['version'] !== $this->get_version()
+			|| !$this->contains_only_strings($decoded['categories']))
 		{
 			return null;
 		}
 
 		$this->server_consent_state = [
 			'categories' => $this->normalize_categories($decoded['categories']),
-			'version' => (int) $decoded['version'],
+			'version' => $decoded['version'],
 		];
 
 		return $this->server_consent_state;
+	}
+
+	/**
+	 * Determine whether every array value is a string.
+	 *
+	 * @param array $values Values to inspect
+	 *
+	 * @return bool
+	 */
+	protected function contains_only_strings(array $values)
+	{
+		foreach ($values as $value)
+		{
+			if (!is_string($value))
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**

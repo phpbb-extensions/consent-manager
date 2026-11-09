@@ -16,31 +16,28 @@
 			mediaPlaceholderLabel: '{{ lang('CONSENTMANAGER_MEDIA_PLACEHOLDER')|e('js') }}'
 		};
 
-		if ((!requiredCategories.length || !enabledCategories.length) && payload.categories)
-		{
-			for (let index = 0; index < payload.categories.length; index++)
-			{
-				if (payload.categories[index].enabled)
-				{
+		if ((!requiredCategories.length || !enabledCategories.length) && payload.categories) {
+			for (let index = 0; index < payload.categories.length; index++) {
+				if (payload.categories[index].enabled) {
 					enabledCategories.push(payload.categories[index].id);
 				}
 
-				if (payload.categories[index].required)
-				{
+				if (payload.categories[index].required) {
 					requiredCategories.push(payload.categories[index].id);
 				}
 			}
 		}
 
-		function parseCookie(name)
-		{
+		function parseCookie(name) {
 			const parts = document.cookie ? document.cookie.split('; ') : [];
 
-			for (let i = 0; i < parts.length; i++)
-			{
-				if (parts[i].indexOf(name + '=') === 0)
-				{
-					return decodeURIComponent(parts[i].substring(name.length + 1));
+			for (let i = 0; i < parts.length; i++) {
+				if (parts[i].indexOf(name + '=') === 0) {
+					try {
+						return decodeURIComponent(parts[i].substring(name.length + 1));
+					} catch (error) {
+						return '';
+					}
 				}
 			}
 
@@ -48,61 +45,47 @@
 		}
 
 		{% if S_CONSENTMANAGER_CLEAR_STORAGE %}
-		try
-		{
+		try {
 			window.localStorage.removeItem(payload.storageKey);
-		}
-		catch (error)
-		{
+		} catch (error) {
+			// localStorage may be unavailable; continue without client-side cleanup.
 		}
 		{% endif %}
 
-		function loadState()
-		{
+		function loadState() {
 			let raw = '';
 			let state = null;
 
-			try
-			{
-				if (window.localStorage)
-				{
+			try {
+				if (window.localStorage) {
 					raw = window.localStorage.getItem(payload.storageKey) || '';
 				}
-			}
-			catch (error)
-			{
+			} catch (error) {
 				raw = '';
 			}
 
-			if (!raw)
-			{
+			if (!raw) {
 				raw = parseCookie(payload.cookieName);
 			}
 
-			if (!raw)
-			{
+			if (!raw) {
 				return null;
 			}
 
-			try
-			{
+			try {
 				state = JSON.parse(raw);
-			}
-			catch (error)
-			{
+			} catch (error) {
 				return null;
 			}
 
-			if (!state || state.version !== payload.version || !state.categories || !state.categories.length)
-			{
+			if (!state || state.version !== payload.version || !state.categories || !state.categories.length) {
 				return null;
 			}
 
 			return state;
 		}
 
-		function hasValue(items, value)
-		{
+		function hasValue(items, value) {
 			return items.indexOf(value) !== -1;
 		}
 
@@ -126,8 +109,7 @@
 		};
 		window.consentManager = stub;
 
-		if (googleConsentMode.enabled)
-		{
+		if (googleConsentMode.enabled) {
 			window.dataLayer = window.dataLayer || [];
 			window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
 
@@ -135,18 +117,15 @@
 			const updates = {};
 			let hasConsentTypes = false;
 
-			for (const consentType in googleConsentTypes)
-			{
-				if (Object.prototype.hasOwnProperty.call(googleConsentTypes, consentType))
-				{
+			for (const consentType in googleConsentTypes) {
+				if (Object.prototype.hasOwnProperty.call(googleConsentTypes, consentType)) {
 					defaults[consentType] = 'denied';
 					updates[consentType] = stub.hasConsent(googleConsentTypes[consentType]) ? 'granted' : 'denied';
 					hasConsentTypes = true;
 				}
 			}
 
-			if (hasConsentTypes)
-			{
+			if (hasConsentTypes) {
 				window.gtag('consent', 'default', defaults);
 				window.gtag('consent', 'update', updates);
 			}
