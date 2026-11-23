@@ -144,28 +144,16 @@ function setupConsentManager(options) {
 			this.body = body;
 			requests.push(this);
 
-			if (typeof this.onloadend === 'function') {
-				this.onloadend();
+			if (!settings.deferLogResponse) {
+				this.respond(200);
 			}
 		}
-	};
-	window.Blob = class FakeBlob {
-		constructor(parts, options) {
-			this.body = parts.join('');
-			this.type = options.type;
+
+		respond(status, body) {
+			this.status = status;
+			this.responseText = body || '';
+			this.onloadend();
 		}
-	};
-
-	window.navigator.sendBeacon = function(url, body) {
-		requests.push({
-			transport: 'beacon',
-			method: 'POST',
-			url,
-			body: body.body,
-			contentType: body.type
-		});
-
-		return true;
 	};
 
 	if (settings.queue) {
@@ -415,6 +403,49 @@ test('marks the consent cookie secure only on HTTPS', () => {
 	expect(httpCookie.secure).toBe(false);
 });
 
+test.each([
+	[ 'accept-all', null ],
+	[ 'reject-all', createState([ 'necessary', 'media' ], '2026-04-28T00:00:00.000Z') ]
+])('a stale token on %s clears the saved choice and reloads once', (action, localState) => {
+	const { window, document, payload, requests, jsdomErrors } = setupConsentManager({
+		localState,
+		deferLogResponse: true
+	});
+
+	click(window, '[data-consent-action="' + action + '"]');
+	expect(jsdomErrors).toHaveLength(0);
+	expect(requests[0].timeout).toBe(localState ? 1000 : 0);
+	requests[0].respond(403, '{"error":"invalid_hash"}');
+
+	expect(window.localStorage.getItem(payload.storageKey)).toBeNull();
+	expect(getCookieValue(document, payload.cookieName)).toBe('');
+	expect(jsdomErrors).toHaveLength(1);
+	expect(jsdomErrors[0].message).toContain('Not implemented: navigation');
+});
+
+test('an unrelated forbidden response keeps the saved choice', () => {
+	const { window, payload, requests, jsdomErrors } = setupConsentManager({ deferLogResponse: true });
+
+	click(window, '[data-consent-action="accept-all"]');
+	requests[0].respond(403, '{"error":"access_denied"}');
+
+	expect(JSON.parse(window.localStorage.getItem(payload.storageKey))).toEqual(window.consentManager.getState());
+	expect(jsdomErrors).toHaveLength(0);
+});
+
+test('a stale response leaves a newer choice saved by another tab', () => {
+	const { window, document, payload, requests } = setupConsentManager({ deferLogResponse: true });
+	click(window, '[data-consent-action="accept-all"]');
+
+	const newerChoice = JSON.stringify(createState([ 'necessary' ], new Date().toISOString()));
+	window.localStorage.setItem(payload.storageKey, newerChoice);
+	document.cookie = payload.cookieName + '=' + encodeURIComponent(newerChoice);
+	requests[0].respond(403, '{"error":"invalid_hash"}');
+
+	expect(window.localStorage.getItem(payload.storageKey)).toBe(newerChoice);
+	expect(getCookieValue(document, payload.cookieName)).toBe(newerChoice);
+});
+
 test('updates Google consent mode before activating newly consented marketing scripts', () => {
 	const { window, document, gtagCalls } = setupConsentManager({
 		withGtag: true,
@@ -459,9 +490,9 @@ test('reject-all logs the updated decision before reloading when consent is revo
 	click(window, '[data-consent-action="reject-all"]');
 
 	expect(requests).toHaveLength(1);
-	expect(requests[0].transport).toBe('beacon');
+	expect(requests[0].method).toBe('POST');
 	expect(requests[0].url).toBe(payload.logEndpoint);
-	expect(requests[0].contentType).toBe('application/json');
+	expect(requests[0].headers['Content-Type']).toBe('application/json');
 	expect(JSON.parse(requests[0].body)).toEqual({
 		hash: payload.logHash,
 		version: payload.version,
@@ -659,6 +690,30 @@ test('renders deferred media placeholder link from original posted URL once befo
 	expect(placeholder.querySelector('a').getAttribute('rel')).toBe('noopener noreferrer');
 });
 
+test.each([
+	[ 'some words here', false ],
+	[ 'video-id', false ],
+	[ '/board/embed/123', false ],
+	[ 'https:///missing-host', false ],
+	[ 'https://video.example.com:invalid/watch', false ],
+	[ 'http://video.example.com/watch', true ],
+	[ '//video.example.com/watch', true ]
+])('renders a placeholder link for %s only if it is a web URL', (source, linked) => {
+	const { document } = setupConsentManager({
+		extraMarkup: `
+			<div data-consent-media-container="1" data-consent-category="media">
+				<span data-consent-media-placeholder="1" data-consent-link="${source}"></span>
+			</div>
+		`
+	});
+	const placeholder = document.querySelector('[data-consent-media-placeholder]');
+	const link = placeholder.querySelector('a');
+	const label = createLang().mediaPlaceholderLabel;
+
+	expect(link && link.getAttribute('href')).toBe(linked ? source : null);
+	expect(placeholder.textContent).toBe(linked ? label + ' ' + source : label);
+});
+
 test('activates deferred embeds when the media content element is the iframe itself', () => {
 	const { document } = setupConsentManager({
 		localState: createState([ 'necessary', 'media' ], '2026-04-28T00:00:00.000Z'),
@@ -686,7 +741,7 @@ test('activates deferred embeds when the media content element is the iframe its
 	expect(frame.hasAttribute('data-consent-src')).toBe(false);
 });
 
-test('saving consent activates deferred embeds when the media content element is the iframe itself', () => {
+test('saving consent activates a relative iframe source', () => {
 	const { window, document } = setupConsentManager({
 		extraMarkup: `
 			<span data-consent-media-container="1" data-consent-category="media">
@@ -695,7 +750,7 @@ test('saving consent activates deferred embeds when the media content element is
 					data-consent-media-frame="1"
 					data-consent-media-content="1"
 					hidden="hidden"
-					data-consent-src="https://media.example.com/embed/456"
+					data-consent-src="/board/embed/456"
 				></iframe>
 			</span>
 		`
@@ -716,7 +771,7 @@ test('saving consent activates deferred embeds when the media content element is
 	expect(container.getAttribute('data-consent-processed')).toBe('1');
 	expect(placeholder.hidden).toBe(true);
 	expect(frame.hidden).toBe(false);
-	expect(frame.getAttribute('src')).toBe('https://media.example.com/embed/456');
+	expect(frame.getAttribute('src')).toBe('/board/embed/456');
 	expect(frame.hasAttribute('data-consent-src')).toBe(false);
 });
 
@@ -735,9 +790,9 @@ test('revoking only media consent reloads the page', () => {
 	click(window, '[data-consent-action="save-settings"]');
 
 	expect(requests).toHaveLength(1);
-	expect(requests[0].transport).toBe('beacon');
+	expect(requests[0].method).toBe('POST');
 	expect(requests[0].url).toBe(payload.logEndpoint);
-	expect(requests[0].contentType).toBe('application/json');
+	expect(requests[0].headers['Content-Type']).toBe('application/json');
 	expect(JSON.parse(requests[0].body)).toEqual({
 		hash: payload.logHash,
 		version: payload.version,

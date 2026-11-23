@@ -125,16 +125,18 @@
 		return '';
 	}
 
-	function removeStoredState() {
+	function removeStoredState(expectedState) {
 		try {
-			if (window.localStorage) {
+			if (window.localStorage && (!expectedState || window.localStorage.getItem(payload.storageKey) === expectedState)) {
 				window.localStorage.removeItem(payload.storageKey);
 			}
 		} catch (error) {
 			// localStorage may be unavailable; continue clearing cookie state.
 		}
 
-		clearCookie(payload.cookieName);
+		if (!expectedState || getCookie(payload.cookieName) === expectedState) {
+			clearCookie(payload.cookieName);
+		}
 	}
 
 	function persistState(nextState) {
@@ -377,67 +379,43 @@
 		return false;
 	}
 
-	function logDecision() {
+	function logDecision(reloadRequired) {
 		if (!payload.logEndpoint || !state) {
+			if (reloadRequired) {
+				window.location.reload();
+			}
 			return;
 		}
 
+		const submittedState = state;
 		const request = new XMLHttpRequest();
 		request.open('POST', payload.logEndpoint, true);
 		request.setRequestHeader('Content-Type', 'application/json');
-		request.send(buildLogDecisionBody());
-	}
+		request.timeout = reloadRequired ? 1000 : 0;
+		request.onloadend = function() {
+			const response = request.status === 403 && safeParse(request.responseText);
+			const stale = state === submittedState && response && response.error === 'invalid_hash';
 
-	function buildLogDecisionBody() {
-		return JSON.stringify({
-			hash: payload.logHash,
-			version: payload.version,
-			categories: state.categories
-		});
-	}
-
-	function logDecisionBeforeReload(onComplete) {
-		if (!payload.logEndpoint || !state) {
-			onComplete();
-			return;
-		}
-
-		const body = buildLogDecisionBody();
-
-		if (window.navigator && typeof window.navigator.sendBeacon === 'function') {
-			try {
-				const beaconBody = new Blob([ body ], { type: 'application/json' });
-				if (window.navigator.sendBeacon(payload.logEndpoint, beaconBody)) {
-					onComplete();
-					return;
-				}
-			} catch (error) {
-				// Fall back to XMLHttpRequest when beacon delivery cannot start.
-			}
-		}
-
-		const request = new XMLHttpRequest();
-		let completed = false;
-		const finish = function() {
-			if (completed) {
-				return;
+			if (stale) {
+				removeStoredState(JSON.stringify(submittedState));
+				state = null;
 			}
 
-			completed = true;
-			onComplete();
+			if (stale || reloadRequired) {
+				window.location.reload();
+			}
 		};
 
-		request.open('POST', payload.logEndpoint, true);
-		request.setRequestHeader('Content-Type', 'application/json');
-		request.onloadend = finish;
-		request.onerror = finish;
-
-		window.setTimeout(finish, 1000);
-
 		try {
-			request.send(body);
+			request.send(JSON.stringify({
+				hash: payload.logHash,
+				version: payload.version,
+				categories: submittedState.categories
+			}));
 		} catch (error) {
-			finish();
+			if (reloadRequired) {
+				window.location.reload();
+			}
 		}
 	}
 
@@ -450,7 +428,6 @@
 		const reloadRequired = shouldReload(state, nextState);
 
 		if (state && sameCategories(state.categories, nextState.categories)) {
-			state.timestamp = nextState.timestamp;
 			persistState(state);
 			updateUi();
 			applyGoogleConsentMode();
@@ -466,14 +443,7 @@
 		processDeferredEmbeds(document);
 		emitChange();
 
-		if (reloadRequired) {
-			logDecisionBeforeReload(function() {
-				window.location.reload();
-			});
-			return;
-		}
-
-		logDecision();
+		logDecision(reloadRequired);
 	}
 
 	function isSafeScriptSource(src) {
@@ -653,7 +623,7 @@
 		const source = placeholder.getAttribute('data-consent-link');
 		placeholder.textContent = mediaPlaceholderLabel || '';
 
-		if (!source || !isSafeEmbedSource(source)) {
+		if (!source || !/^(?:https?:)?\/\/[^/\\?#\s]\S*$/i.test(source) || !isSafeEmbedSource(source)) {
 			return;
 		}
 
